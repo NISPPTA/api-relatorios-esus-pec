@@ -101,19 +101,13 @@ CATALOGO_RELATORIOS: dict[str, RelatorioDisponivel] = {
     ),
 }
 
-# Mapeamento do nome do grupo para as chaves do catálogo
 MAPEAMENTO_GRUPOS: dict[str, list[str]] = {
     "ACS - AGENTE COMUNITÁRIO DE SAÚDE": [
         "visitas_domiciliares",
         "cadastros_territoriais",
     ],
-    "ACE - AGENTE DE COMBATE ÀS ENDEMIAS": [
-        "visitas_endemias",
-    ],
-    "MÉDICO": [
-        "consultas_medicas",
-        "procedimentos_ambulatoriais",
-    ],
+    "ACE - AGENTE DE COMBATE ÀS ENDEMIAS": ["visitas_endemias"],
+    "MÉDICO": ["consultas_medicas", "procedimentos_ambulatoriais"],
     "ENFERMEIRO": [
         "consultas_enfermagem",
         "procedimentos_ambulatoriais",
@@ -123,30 +117,17 @@ MAPEAMENTO_GRUPOS: dict[str, list[str]] = {
         "procedimentos_ambulatoriais",
         "vacinacao_administrada",
     ],
-    "CIRURGIÃO DENTISTA": [
-        "consultas_odontologicas",
-        "procedimentos_odonto",
-    ],
-    "ASB - AUXILIAR DE SAÚDE BUCAL": [
-        "procedimentos_odonto",
-    ],
-    "TSB - TÉCNICO DE SAÚDE BUCAL": [
-        "procedimentos_odonto",
-    ],
+    "CIRURGIÃO DENTISTA": ["consultas_odontologicas", "procedimentos_odonto"],
+    "ASB - AUXILIAR DE SAÚDE BUCAL": ["procedimentos_odonto"],
+    "TSB - TÉCNICO DE SAÚDE BUCAL": ["procedimentos_odonto"],
     "OUTRO PROF. NÍVEL SUPERIOR": [
         "atendimentos_emulti",
         "atividades_coletivas",
         "procedimentos_ambulatoriais",
     ],
-    "OUTRO PROF. NÍVEL MÉDIO/TÉCNICO": [
-        "procedimentos_ambulatoriais",
-    ],
-    "ADMINISTRATIVO / RECEPÇÃO": [
-        "cadastros_recepcao",
-    ],
-    "DIGITADOR": [
-        "cadastros_recepcao",
-    ],
+    "OUTRO PROF. NÍVEL MÉDIO/TÉCNICO": ["procedimentos_ambulatoriais"],
+    "ADMINISTRATIVO / RECEPÇÃO": ["cadastros_recepcao"],
+    "DIGITADOR": ["cadastros_recepcao"],
 }
 
 
@@ -154,11 +135,7 @@ class RelatoriosService:
     def _resolver_relatorios_para_grupos(
         self, grupos: list[str]
     ) -> list[RelatorioDisponivel]:
-        """Calcula a união única de relatórios disponíveis a partir da lista de grupos."""
-        chaves_resolvidas = {
-            "matriz_serie_historica"
-        }  # Todos têm direito à Matriz Geral
-
+        chaves_resolvidas = {"matriz_serie_historica"}
         for grupo in grupos:
             chaves = MAPEAMENTO_GRUPOS.get(grupo, [])
             chaves_resolvidas.update(chaves)
@@ -169,14 +146,14 @@ class RelatoriosService:
             if chave in CATALOGO_RELATORIOS
         ]
 
-    def _calcular_dias_uteis(self, ano: int, mes_inicio: int, mes_fim: int) -> int:
-        """Calcula o total de dias de segunda a sexta-feira no intervalo de meses."""
-        dias_uteis = 0
-        for mes in range(mes_inicio, mes_fim + 1):
-            matriz_mes = calendar.monthcalendar(ano, mes)
-            for semana in matriz_mes:
-                dias_uteis += sum(1 for dia in semana[:5] if dia != 0)
-        return dias_uteis
+    def _obter_metricas_calendario_mes(self, ano: int, mes: int) -> tuple[int, int]:
+        """Retorna (dias_totais_no_mes, dias_uteis_seg_a_sex)."""
+        _, total_dias = calendar.monthrange(ano, mes)
+        matriz_semanas = calendar.monthcalendar(ano, mes)
+        dias_uteis = sum(
+            sum(1 for dia in semana[:5] if dia != 0) for semana in matriz_semanas
+        )
+        return total_dias, dias_uteis
 
     async def listar_profissionais(
         self,
@@ -186,7 +163,7 @@ class RelatoriosService:
         tamanho: int = 10,
     ) -> dict[str, Any]:
         """Consulta paginada de profissionais inteligente com offset e limit."""
-        filtro_sql = "AND UPPER(p.no_profissional) LIKE UPPER(:busca)" if busca else ""
+        filtro_sql = "AND UPPER(p.nome) LIKE UPPER(:busca)" if busca else ""
         offset = (pagina - 1) * tamanho
 
         sql = f"""
@@ -251,7 +228,6 @@ class RelatoriosService:
                 else []
             )
 
-            # Formata usando o schema ou dicionário
             profissionais.append(
                 {
                     "id_profissional": linha["id_profissional"],
@@ -275,18 +251,13 @@ class RelatoriosService:
     async def obter_perfil_profissional(
         self, session: AsyncSession, id_profissional: int
     ) -> ProfissionalPerfil | None:
-        """Obtém o perfil inteligente de um único profissional pelo ID."""
         sql = """
             WITH producao_cbo AS (
                 SELECT co_dim_profissional AS id_prof, co_dim_cbo AS id_cbo, 'Procedimento' AS origem FROM tb_fat_proced_atend
-                UNION
-                SELECT co_dim_profissional, co_dim_cbo, 'Visita Domiciliar' FROM tb_fat_visita_domiciliar
-                UNION
-                SELECT co_dim_profissional_1, co_dim_cbo_1, 'Atendimento Individual' FROM tb_fat_atendimento_individual
-                UNION
-                SELECT co_dim_profissional_1, co_dim_cbo_1, 'Atendimento Odonto' FROM tb_fat_atendimento_odonto
-                UNION
-                SELECT co_dim_profissional, co_dim_cbo, 'Cadastro' FROM tb_fat_cad_individual
+                UNION SELECT co_dim_profissional, co_dim_cbo, 'Visita Domiciliar' FROM tb_fat_visita_domiciliar
+                UNION SELECT co_dim_profissional_1, co_dim_cbo_1, 'Atendimento Individual' FROM tb_fat_atendimento_individual
+                UNION SELECT co_dim_profissional_1, co_dim_cbo_1, 'Atendimento Odonto' FROM tb_fat_atendimento_odonto
+                UNION SELECT co_dim_profissional, co_dim_cbo, 'Cadastro' FROM tb_fat_cad_individual
             ),
             classificacao_base AS (
                 SELECT 
@@ -340,7 +311,6 @@ class RelatoriosService:
             relatorios_habilitados=self._resolver_relatorios_para_grupos(grupos),
         )
 
-    # --- Método da Matriz Consolidada ---
     async def gerar_matriz_producao(
         self,
         session: AsyncSession,
@@ -383,86 +353,27 @@ class RelatoriosService:
                 WHERE nu_ano = :ano AND nu_mes BETWEEN :mes_inicio AND :mes_fim
             ),
             producao_base AS (
-                SELECT f.co_dim_profissional AS id_prof, t.nu_mes, 'Procedimentos' AS categoria
-                FROM tb_fat_proced_atend f
-                JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo
-                WHERE f.co_dim_profissional = :id_prof
-
-                UNION ALL
-                SELECT f.co_dim_profissional, t.nu_mes, 'Visita Domiciliar'
-                FROM tb_fat_visita_domiciliar f
-                JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo
-                WHERE f.co_dim_profissional = :id_prof
-
-                UNION ALL
-                SELECT f.co_dim_profissional_1, t.nu_mes, 'Atendimento Individual'
-                FROM tb_fat_atendimento_individual f
-                JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo
-                WHERE f.co_dim_profissional_1 = :id_prof
-
-                UNION ALL
-                SELECT f.co_dim_profissional_1, t.nu_mes, 'Atendimento Odontológico'
-                FROM tb_fat_atendimento_odonto f
-                JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo
-                WHERE f.co_dim_profissional_1 = :id_prof
-
-                UNION ALL
-                SELECT f.co_dim_profissional_1, t.nu_mes, 'Atendimento Domiciliar'
-                FROM tb_fat_atendimento_domiciliar f
-                JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo
-                WHERE f.co_dim_profissional_1 = :id_prof
-
-                UNION ALL
-                SELECT f.co_dim_profissional, t.nu_mes, 'Cadastro Individual'
-                FROM tb_fat_cad_individual f
-                JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo
-                WHERE f.co_dim_profissional = :id_prof
-
-                UNION ALL
-                SELECT f.co_dim_profissional, t.nu_mes, 'Cadastro Domiciliar'
-                FROM tb_fat_cad_domiciliar f
-                JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo
-                WHERE f.co_dim_profissional = :id_prof
-
-                UNION ALL
-                SELECT f.co_dim_profissional, t.nu_mes, 'Vacinação'
-                FROM tb_fat_vacinacao f
-                JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo
-                WHERE f.co_dim_profissional = :id_prof
-
-                UNION ALL
-                SELECT f.co_dim_profissional, t.nu_mes, 'Atividade Coletiva'
-                FROM tb_fat_atividade_coletiva f
-                JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo
-                WHERE f.co_dim_profissional = :id_prof
-
-                UNION ALL
-                SELECT f.co_dim_profissional, t.nu_mes, 'Consumo Alimentar'
-                FROM tb_fat_marca_consumo_alimnt f
-                JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo
-                WHERE f.co_dim_profissional = :id_prof
-
-                UNION ALL
-                SELECT f.co_dim_profissional_1, t.nu_mes, 'Avaliação de Elegibilidade'
-                FROM tb_fat_avaliacao_elegibilidade f
-                JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo
-                WHERE f.co_dim_profissional_1 = :id_prof
+                SELECT f.co_dim_profissional AS id_prof, t.nu_mes, 'Procedimentos' AS categoria FROM tb_fat_proced_atend f JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo WHERE f.co_dim_profissional = :id_prof
+                UNION ALL SELECT f.co_dim_profissional, t.nu_mes, 'Visita Domiciliar' FROM tb_fat_visita_domiciliar f JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo WHERE f.co_dim_profissional = :id_prof
+                UNION ALL SELECT f.co_dim_profissional_1, t.nu_mes, 'Atendimento Individual' FROM tb_fat_atendimento_individual f JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo WHERE f.co_dim_profissional_1 = :id_prof
+                UNION ALL SELECT f.co_dim_profissional_1, t.nu_mes, 'Atendimento Odontológico' FROM tb_fat_atendimento_odonto f JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo WHERE f.co_dim_profissional_1 = :id_prof
+                UNION ALL SELECT f.co_dim_profissional_1, t.nu_mes, 'Atendimento Domiciliar' FROM tb_fat_atendimento_domiciliar f JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo WHERE f.co_dim_profissional_1 = :id_prof
+                UNION ALL SELECT f.co_dim_profissional, t.nu_mes, 'Cadastro Individual' FROM tb_fat_cad_individual f JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo WHERE f.co_dim_profissional = :id_prof
+                UNION ALL SELECT f.co_dim_profissional, t.nu_mes, 'Cadastro Domiciliar' FROM tb_fat_cad_domiciliar f JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo WHERE f.co_dim_profissional = :id_prof
+                UNION ALL SELECT f.co_dim_profissional, t.nu_mes, 'Vacinação' FROM tb_fat_vacinacao f JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo WHERE f.co_dim_profissional = :id_prof
+                UNION ALL SELECT f.co_dim_profissional, t.nu_mes, 'Atividade Coletiva' FROM tb_fat_atividade_coletiva f JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo WHERE f.co_dim_profissional = :id_prof
+                UNION ALL SELECT f.co_dim_profissional, t.nu_mes, 'Consumo Alimentar' FROM tb_fat_marca_consumo_alimnt f JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo WHERE f.co_dim_profissional = :id_prof
+                UNION ALL SELECT f.co_dim_profissional_1, t.nu_mes, 'Avaliação de Elegibilidade' FROM tb_fat_avaliacao_elegibilidade f JOIN dim_tempo_filtrada t ON t.co_seq_dim_tempo = f.co_dim_tempo WHERE f.co_dim_profissional_1 = :id_prof
             ),
             pivoteado AS (
                 SELECT 
                     categoria,
-                    COUNT(CASE WHEN nu_mes = 1 THEN 1 END) AS "jan",
-                    COUNT(CASE WHEN nu_mes = 2 THEN 1 END) AS "fev",
-                    COUNT(CASE WHEN nu_mes = 3 THEN 1 END) AS "mar",
-                    COUNT(CASE WHEN nu_mes = 4 THEN 1 END) AS "abr",
-                    COUNT(CASE WHEN nu_mes = 5 THEN 1 END) AS "mai",
-                    COUNT(CASE WHEN nu_mes = 6 THEN 1 END) AS "jun",
-                    COUNT(CASE WHEN nu_mes = 7 THEN 1 END) AS "jul",
-                    COUNT(CASE WHEN nu_mes = 8 THEN 1 END) AS "ago",
-                    COUNT(CASE WHEN nu_mes = 9 THEN 1 END) AS "set",
-                    COUNT(CASE WHEN nu_mes = 10 THEN 1 END) AS "out",
-                    COUNT(CASE WHEN nu_mes = 11 THEN 1 END) AS "nov",
-                    COUNT(CASE WHEN nu_mes = 12 THEN 1 END) AS "dez"
+                    COUNT(CASE WHEN nu_mes = 1 THEN 1 END) AS "jan", COUNT(CASE WHEN nu_mes = 2 THEN 1 END) AS "fev",
+                    COUNT(CASE WHEN nu_mes = 3 THEN 1 END) AS "mar", COUNT(CASE WHEN nu_mes = 4 THEN 1 END) AS "abr",
+                    COUNT(CASE WHEN nu_mes = 5 THEN 1 END) AS "mai", COUNT(CASE WHEN nu_mes = 6 THEN 1 END) AS "jun",
+                    COUNT(CASE WHEN nu_mes = 7 THEN 1 END) AS "jul", COUNT(CASE WHEN nu_mes = 8 THEN 1 END) AS "ago",
+                    COUNT(CASE WHEN nu_mes = 9 THEN 1 END) AS "set", COUNT(CASE WHEN nu_mes = 10 THEN 1 END) AS "out",
+                    COUNT(CASE WHEN nu_mes = 11 THEN 1 END) AS "nov", COUNT(CASE WHEN nu_mes = 12 THEN 1 END) AS "dez"
                 FROM producao_base
                 GROUP BY categoria
             ),
@@ -474,13 +385,10 @@ class RelatoriosService:
                     'Avaliação de Elegibilidade', 'Vacinação'
                 ]) AS categoria
             )
-            SELECT 
-                c.categoria,
-                {colunas_soma}
+            SELECT c.categoria, {colunas_soma}
             FROM categorias_oficiais c
             LEFT JOIN pivoteado p ON p.categoria = c.categoria
-            GROUP BY c.categoria
-            ORDER BY c.categoria;
+            GROUP BY c.categoria ORDER BY c.categoria;
         """
 
         result = await session.execute(
@@ -530,12 +438,8 @@ class RelatoriosService:
         mes_inicio: int,
         mes_fim: int,
     ) -> dict[str, Any]:
-        """Gera o boletim detalhado de Visitas Domiciliares para ACS/ACE."""
-
         sql_desfecho = """
-            SELECT 
-                d.ds_desfecho_visita AS desfecho,
-                COUNT(1) AS total
+            SELECT d.ds_desfecho_visita AS desfecho, COUNT(1) AS total
             FROM tb_fat_visita_domiciliar f
             JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = f.co_dim_tempo
             JOIN tb_dim_desfecho_visita d ON d.co_seq_dim_desfecho_visita = f.co_dim_desfecho_visita
@@ -571,7 +475,6 @@ class RelatoriosService:
             "mes_inicio": mes_inicio,
             "mes_fim": mes_fim,
         }
-
         res_desfechos = await session.execute(text(sql_desfecho), parametros)
         res_motivos = await session.execute(text(sql_motivos), parametros)
 
@@ -600,9 +503,9 @@ class RelatoriosService:
         mes_fim: int,
         dias_desconto: int = 0,
     ) -> dict[str, Any]:
-        """Gera o boletim de Procedimentos SIGTAP com evolução mensal e eficiência."""
+        """Gera o relatório com análise mensal, calendário útil e distribuição diária detalhada."""
 
-        # 1. Query Detalhada por SIGTAP
+        # 1. Procedimentos SIGTAP
         sql_sigtap = """
             SELECT 
                 p.co_proced AS codigo_sigtap,
@@ -617,7 +520,7 @@ class RelatoriosService:
             ORDER BY quantidade DESC;
         """
 
-        # 2. Query de Evolução Mensal
+        # 2. Agrupamento Mensal
         sql_evolucao = """
             SELECT 
                 t.nu_mes AS mes,
@@ -631,6 +534,22 @@ class RelatoriosService:
             ORDER BY t.nu_mes;
         """
 
+        # 3. Registros Diários (Seção 3 do Relatório)
+        sql_diario = """
+            SELECT 
+                t.nu_ano AS ano,
+                t.nu_mes AS mes,
+                t.nu_dia AS dia,
+                LPAD(t.nu_dia::text, 2, '0') || '/' || LPAD(t.nu_mes::text, 2, '0') || '/' || t.nu_ano::text AS data_formatada,
+                COUNT(1) AS quantidade
+            FROM tb_fat_proced_atend_proced fp
+            JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fp.co_dim_tempo
+            WHERE fp.co_dim_profissional = :id_prof
+              AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+            GROUP BY t.nu_ano, t.nu_mes, t.nu_dia
+            ORDER BY t.nu_ano ASC, t.nu_mes ASC, t.nu_dia ASC;
+        """
+
         parametros = {
             "id_prof": id_profissional,
             "ano": ano,
@@ -640,9 +559,11 @@ class RelatoriosService:
 
         res_sigtap = await session.execute(text(sql_sigtap), parametros)
         res_evolucao = await session.execute(text(sql_evolucao), parametros)
+        res_diario = await session.execute(text(sql_diario), parametros)
 
         linhas_sigtap = res_sigtap.mappings().all()
-        linhas_evolucao = res_evolucao.mappings().all()
+        linhas_evolucao = {r["mes"]: r for r in res_evolucao.mappings().all()}
+        linhas_diario = res_diario.mappings().all()
 
         detalhamento = [
             {
@@ -653,7 +574,18 @@ class RelatoriosService:
             for r in linhas_sigtap
         ]
 
-        evolucao_mensal = []
+        # Montagem dos Registros Diários e Detecção de Pico
+        registros_diarios = []
+        maior_volume_dia = {"data": "-", "quantidade": 0}
+
+        for r in linhas_diario:
+            qtd = int(r["quantidade"])
+            data_str = r["data_formatada"]
+            registros_diarios.append({"data": data_str, "quantidade": qtd})
+            if qtd > maior_volume_dia["quantidade"]:
+                maior_volume_dia = {"data": data_str, "quantidade": qtd}
+
+        # Montagem da Evolução Mensal com Dias Úteis e Porcentagem Efetiva
         meses_nomes = {
             1: "Jan",
             2: "Fev",
@@ -669,31 +601,57 @@ class RelatoriosService:
             12: "Dez",
         }
 
+        evolucao_mensal = []
         total_geral = 0
         total_dias_registro = 0
+        total_dias_mes_geral = 0
+        total_dias_uteis_geral = 0
+        meses_com_registro = 0
 
-        for r in linhas_evolucao:
-            total_geral += r["quantidade"]
-            total_dias_registro += r["dias_com_registro"]
+        for mes_num in range(mes_inicio, mes_fim + 1):
+            dias_no_mes, dias_uteis_mes = self._obter_metricas_calendario_mes(
+                ano, mes_num
+            )
+            total_dias_mes_geral += dias_no_mes
+            total_dias_uteis_geral += dias_uteis_mes
+
+            reg_mes = linhas_evolucao.get(mes_num)
+            if reg_mes:
+                qtd_mes = reg_mes["quantidade"]
+                dias_reg_mes = reg_mes["dias_com_registro"]
+                media_dia_mes = (
+                    round(qtd_mes / dias_reg_mes, 2) if dias_reg_mes > 0 else 0
+                )
+                pct_efetiva = (
+                    round((dias_reg_mes / dias_uteis_mes) * 100, 1)
+                    if dias_uteis_mes > 0
+                    else 0
+                )
+                meses_com_registro += 1
+            else:
+                qtd_mes = 0
+                dias_reg_mes = 0
+                media_dia_mes = 0
+                pct_efetiva = 0.0
+
+            total_geral += qtd_mes
+            total_dias_registro += dias_reg_mes
+
             evolucao_mensal.append(
                 {
-                    "mes": meses_nomes.get(r["mes"], str(r["mes"])),
-                    "quantidade": r["quantidade"],
-                    "dias_com_registro": r["dias_com_registro"],
-                    "media_dia": (
-                        round(r["quantidade"] / r["dias_com_registro"], 2)
-                        if r["dias_com_registro"] > 0
-                        else 0
-                    ),
+                    "mes_numero": mes_num,
+                    "mes": meses_nomes.get(mes_num, str(mes_num)),
+                    "dias_calendario": dias_no_mes,
+                    "dias_uteis": dias_uteis_mes,
+                    "dias_com_registro": dias_reg_mes,
+                    "percentual_dias_efetivos": pct_efetiva,
+                    "quantidade": qtd_mes,
+                    "media_dia": media_dia_mes,
                 }
             )
 
-        # Cálculo de Eficiência Teórica (Calendário)
-        dias_uteis_esperados = (
-            self._calcular_dias_uteis(ano, mes_inicio, mes_fim) - dias_desconto
-        )
-        dias_uteis_esperados = max(dias_uteis_esperados, 0)
-
+        # Cálculo Geral de Produtividade e Calendário
+        dias_uteis_esperados = max(0, total_dias_uteis_geral - dias_desconto)
         media_dia_registrado = (
             round(total_geral / total_dias_registro, 2)
             if total_dias_registro > 0
@@ -704,17 +662,26 @@ class RelatoriosService:
             if dias_uteis_esperados > 0
             else 0
         )
+        pct_geral_efetiva = (
+            round((total_dias_registro / dias_uteis_esperados) * 100, 1)
+            if dias_uteis_esperados > 0
+            else 0
+        )
 
         return {
             "resumo": {
                 "total_procedimentos": total_geral,
-                "meses_com_registro": len(evolucao_mensal),
+                "meses_com_registro": meses_com_registro,
                 "dias_com_registro": total_dias_registro,
+                "total_dias_calendario": total_dias_mes_geral,
                 "dias_uteis_esperados": dias_uteis_esperados,
+                "percentual_dias_efetivos_geral": pct_geral_efetiva,
                 "media_por_dia_registrado": media_dia_registrado,
                 "media_por_dia_esperado": media_dia_teorico,
+                "maior_volume_dia": maior_volume_dia,
             },
             "evolucao_mensal": evolucao_mensal,
+            "registros_diarios": registros_diarios,
             "detalhamento": detalhamento,
         }
 
