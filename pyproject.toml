@@ -1,0 +1,15 @@
+[project]
+name = "relatorios-esus-pec"
+version = "1.0.0"
+description = "API em FastAPI para geração de relatórios de produção do e-SUS PEC"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastapi==0.110.0",
+    "uvicorn[standard]==0.29.0",
+    "sqlalchemy==2.0.29",
+    "asyncpg==0.30.0",
+    "pydantic-settings==2.2.1"
+]
+
+[tool.poetry]
+package-mode = false
