@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,39 +8,100 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @media print {
-            body { background-color: white !important; }
+            body { background-color: white !important; padding: 0 !important; }
             .no-print { display: none !important; }
-            .print-shadow-none { box-shadow: none !important; border: none !important; }
+            .print-shadow-none { box-shadow: none !important; border: none !important; padding: 0 !important; }
             .page-break { page-break-before: always; }
         }
     </style>
 </head>
-<body class="bg-gray-100 p-8 font-sans text-gray-800">
+<body class="bg-gray-100 p-6 font-sans text-gray-800">
 
-    <div class="max-w-4xl mx-auto bg-white p-10 rounded-lg shadow-md print-shadow-none border border-gray-200" id="relatorio-container">
+    <!-- BARRA DE FILTROS DINÂMICA (Invisível na Impressão) -->
+    <div class="max-w-5xl mx-auto bg-white p-4 rounded-lg shadow mb-6 border border-gray-200 no-print">
+        <form id="form-filtros" class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Ano</label>
+                <input type="number" id="input-ano" value="{{ filtro_ano }}" min="2020" max="2030"
+                       class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Início</label>
+                <select id="select-mes-inicio" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
+                    <option value="1">Janeiro (01)</option>
+                    <option value="2">Fevereiro (02)</option>
+                    <option value="3">Março (03)</option>
+                    <option value="4">Abril (04)</option>
+                    <option value="5" selected>Maio (05)</option>
+                    <option value="6">Junho (06)</option>
+                    <option value="7">Julho (07)</option>
+                    <option value="8">Agosto (08)</option>
+                    <option value="9">Setembro (09)</option>
+                    <option value="10">Outubro (10)</option>
+                    <option value="11">Novembro (11)</option>
+                    <option value="12">Dezembro (12)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Fim</label>
+                <select id="select-mes-fim" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
+                    <option value="1">Janeiro (01)</option>
+                    <option value="2">Fevereiro (02)</option>
+                    <option value="3">Março (03)</option>
+                    <option value="4">Abril (04)</option>
+                    <option value="5">Maio (05)</option>
+                    <option value="6">Junho (06)</option>
+                    <option value="7">Julho (07)</option>
+                    <option value="8">Agosto (08)</option>
+                    <option value="9">Setembro (09)</option>
+                    <option value="10" selected>Outubro (10)</option>
+                    <option value="11">Novembro (11)</option>
+                    <option value="12">Dezembro (12)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1" title="Férias, atestados ou pontos facultativos">
+                    Desconto Dias
+                </label>
+                <input type="number" id="input-desconto" value="{{ filtro_dias_desconto }}" min="0" max="100"
+                       class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors">
+                    Atualizar
+                </button>
+                <a href="/busca" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1.5 px-3 rounded text-sm text-center">
+                    Voltar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- FOLHA A4 DO RELATÓRIO -->
+    <div class="max-w-5xl mx-auto bg-white p-10 rounded-lg shadow-md print-shadow-none border border-gray-200">
         
         <!-- Cabeçalho -->
-        <div class="flex justify-between items-start border-b-2 border-blue-800 pb-4 mb-8">
+        <div class="flex justify-between items-start border-b-2 border-blue-800 pb-4 mb-6">
             <div>
                 <h1 class="text-3xl font-bold text-blue-900 uppercase tracking-wide">Relatório Gerencial</h1>
                 <h2 class="text-xl text-gray-600 mt-1">Produção de procedimentos individualizados</h2>
-                <p class="text-sm text-gray-500 mt-2">Maio a Outubro de 2026 | Profissional: <strong>{{ nome_profissional }}</strong></p>
+                <p class="text-sm text-gray-500 mt-2">
+                    Período: <strong id="lbl-periodo-extenso">Maio a Outubro de 2026</strong> | Profissional: <strong>{{ nome_profissional }}</strong>
+                </p>
             </div>
-            <button onclick="window.print()" class="no-print bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded inline-flex items-center shadow transition-colors" id="btn-imprimir" style="display: none;">
+            <button onclick="window.print()" class="no-print bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded inline-flex items-center shadow transition-colors" id="btn-imprimir">
                 <svg class="fill-current w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M4 4h12v4H4V4zm2 2v1h8V6H6zm10 4H4c-1.1 0-2 .9-2 2v5h4v3h8v-3h4v-5c0-1.1-.9-2-2-2zm-2 8H6v-4h8v4zm2-6H6v-1h8v1z"/></svg>
                 Imprimir / PDF
             </button>
         </div>
 
-        <!-- Estado de Carregamento -->
         <div id="loading" class="text-center py-10">
-            <p class="text-blue-600 font-bold text-lg animate-pulse">A extrair dados do e-SUS PEC...</p>
+            <p class="text-blue-600 font-bold text-lg animate-pulse">Consultando dados no e-SUS PEC...</p>
         </div>
 
-        <!-- Conteúdo do Relatório (Escondido até carregar) -->
         <div id="conteudo-relatorio" style="display: none;">
             
-            <!-- Indicadores Rápidos -->
+            <!-- Cards Rápidos de Indicadores -->
             <div class="grid grid-cols-4 gap-4 mb-8 text-center">
                 <div class="bg-gray-50 p-4 rounded border border-gray-100">
                     <span id="ind-total" class="block text-3xl font-bold text-blue-800">-</span>
@@ -48,30 +109,29 @@
                 </div>
                 <div class="bg-gray-50 p-4 rounded border border-gray-100">
                     <span id="ind-meses" class="block text-3xl font-bold text-blue-800">-</span>
-                    <span class="text-xs text-gray-500 uppercase">Meses com registos</span>
+                    <span class="text-xs text-gray-500 uppercase">Meses com registros</span>
                 </div>
                 <div class="bg-gray-50 p-4 rounded border border-gray-100">
                     <span id="ind-dias" class="block text-3xl font-bold text-blue-800">-</span>
-                    <span class="text-xs text-gray-500 uppercase">Dias com registos</span>
+                    <span class="text-xs text-gray-500 uppercase">Dias com registros</span>
                 </div>
                 <div class="bg-gray-50 p-4 rounded border border-gray-100">
-                    <span id="ind-media" class="block text-3xl font-bold text-blue-800">-</span>
-                    <span class="text-xs text-gray-500 uppercase">Média / Dia Trabalhado</span>
+                    <span id="ind-pico" class="block text-3xl font-bold text-blue-800">-</span>
+                    <span class="text-xs text-gray-500 uppercase">Maior volume (1 dia)</span>
                 </div>
             </div>
 
-            <!-- Resumo Executivo -->
+            <!-- 1. Resumo Executivo -->
             <section class="mb-8">
                 <h3 class="text-lg font-bold text-gray-800 border-b border-gray-300 pb-1 mb-3">1. Resumo Executivo</h3>
                 <p class="text-sm text-gray-700 leading-relaxed text-justify bg-blue-50 p-3 border-l-4 border-blue-400">
-                    <strong>Leitura Gerencial:</strong> O profissional obteve uma média de <span id="txt-media-registada" class="font-bold"></span> procedimentos por dia em que teve atividade no sistema. A expectativa teórica (considerando os dias úteis no calendário) era de <span id="txt-media-teorica" class="font-bold"></span> procedimentos diários.
+                    <strong>Leitura Gerencial:</strong> O profissional obteve uma média de <span id="txt-media-registrada" class="font-bold"></span> procedimentos por dia trabalhado, com taxa de efetividade de <span id="txt-pct-efetiva" class="font-bold"></span>% frente ao calendário planejado (<span id="txt-dias-uteis-esperados" class="font-bold"></span> dias úteis esperados). A média frente aos dias úteis teóricos é de <span id="txt-media-teorica" class="font-bold"></span> procedimentos/dia.
                 </p>
             </section>
 
-            <!-- Evolução Mensal -->
+            <!-- 2. Evolução Mensal -->
             <section class="mb-8 page-break">
                 <h3 class="text-lg font-bold text-gray-800 border-b border-gray-300 pb-1 mb-4">2. Evolução Mensal</h3>
-                
                 <div class="w-full h-64 mb-6">
                     <canvas id="graficoEvolucao"></canvas>
                 </div>
@@ -79,29 +139,42 @@
                 <table class="w-full text-sm text-left text-gray-600 border border-gray-200">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-100 border-b border-gray-200">
                         <tr>
-                            <th class="px-4 py-2">Mês</th>
-                            <th class="px-4 py-2 text-right">Procedimentos</th>
-                            <th class="px-4 py-2 text-right">Dias com registo</th>
-                            <th class="px-4 py-2 text-right">Média / Dia registado</th>
+                            <th class="px-3 py-2">Mês</th>
+                            <th class="px-3 py-2 text-right">Dias do Mês</th>
+                            <th class="px-3 py-2 text-right">Dias Úteis</th>
+                            <th class="px-3 py-2 text-right">Dias Registrados</th>
+                            <th class="px-3 py-2 text-right">% Dias Efetivos</th>
+                            <th class="px-3 py-2 text-right">Procedimentos</th>
+                            <th class="px-3 py-2 text-right">Média/Dia Reg.</th>
                         </tr>
                     </thead>
-                    <tbody id="tabela-corpo">
-                        <!-- Preenchido via JS -->
-                    </tbody>
+                    <tbody id="tabela-corpo"></tbody>
                     <tfoot class="bg-gray-50 font-bold border-t-2 border-gray-300">
                         <tr>
-                            <td class="px-4 py-2">TOTAL</td>
-                            <td id="tab-total-procedimentos" class="px-4 py-2 text-right">-</td>
-                            <td id="tab-total-dias" class="px-4 py-2 text-right">-</td>
-                            <td id="tab-media-geral" class="px-4 py-2 text-right">-</td>
+                            <td class="px-3 py-2">TOTAL</td>
+                            <td id="tab-tot-calendario" class="px-3 py-2 text-right">-</td>
+                            <td id="tab-tot-uteis" class="px-3 py-2 text-right">-</td>
+                            <td id="tab-tot-registrados" class="px-3 py-2 text-right">-</td>
+                            <td id="tab-tot-pct" class="px-3 py-2 text-right">-</td>
+                            <td id="tab-tot-procedimentos" class="px-3 py-2 text-right">-</td>
+                            <td id="tab-tot-media" class="px-3 py-2 text-right">-</td>
                         </tr>
                     </tfoot>
                 </table>
             </section>
 
-            <!-- Detalhamento de Procedimentos -->
+            <!-- 3. Distribuição dos Registros Diários -->
             <section class="mb-8 page-break">
-                <h3 class="text-lg font-bold text-gray-800 border-b border-gray-300 pb-1 mb-4">3. Top Procedimentos (SIGTAP)</h3>
+                <h3 class="text-lg font-bold text-gray-800 border-b border-gray-300 pb-1 mb-3">3. Distribuição dos Registros Diários</h3>
+                <p class="text-sm text-gray-600 mb-4" id="txt-distribuicao-resumo">
+                    Detalhamento dos dias com movimentação e quantidade de registros individuais identificados.
+                </p>
+                <div id="grid-dias-container" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs"></div>
+            </section>
+
+            <!-- 4. Top Procedimentos (SIGTAP) -->
+            <section class="mb-8 page-break">
+                <h3 class="text-lg font-bold text-gray-800 border-b border-gray-300 pb-1 mb-4">4. Top Procedimentos (SIGTAP)</h3>
                 <table class="w-full text-sm text-left text-gray-600 border border-gray-200">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-100 border-b border-gray-200">
                         <tr>
@@ -110,9 +183,7 @@
                             <th class="px-4 py-2 text-right">Quantidade</th>
                         </tr>
                     </thead>
-                    <tbody id="tabela-sigtap">
-                        <!-- Preenchido via JS -->
-                    </tbody>
+                    <tbody id="tabela-sigtap"></tbody>
                 </table>
             </section>
 
@@ -120,47 +191,61 @@
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", async function() {
-            // O Jinja2 injeta o ID real aqui, vindo do router
-            const idProfissional = {{ id_profissional }};
-            const ano = 2026;
-            const mesInicio = 5; // Maio
-            const mesFim = 10;   // Outubro
+        const idProfissional = {{ id_profissional }};
+        let chartInstance = null;
+
+        const mesesNomes = {
+            1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho",
+            7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
+        };
+
+        async function carregarRelatorio() {
+            const ano = document.getElementById('input-ano').value;
+            const mesInicio = document.getElementById('select-mes-inicio').value;
+            const mesFim = document.getElementById('select-mes-fim').value;
+            const diasDesconto = document.getElementById('input-desconto').value || 0;
+
+            document.getElementById('lbl-periodo-extenso').textContent = 
+                `${mesesNomes[mesInicio]} a ${mesesNomes[mesFim]} de ${ano}`;
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('conteudo-relatorio').style.display = 'none';
 
             try {
-                // Requisição à API REST que criámos
-                const response = await fetch(`/api/relatorios/profissionais/${idProfissional}/procedimentos?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}&dias_desconto=0`);
-                
-                if (!response.ok) throw new Error("Erro ao aceder aos dados");
-                
-                const dados = await response.json();
-                
-                // Esconder o ecrã de loading e mostrar o relatório
+                const url = `/api/relatorios/profissionais/${idProfissional}/procedimentos?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}&dias_desconto=${diasDesconto}`;
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error("Erro na requisição dos dados.");
+                const dados = await resp.json();
+
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('conteudo-relatorio').style.display = 'block';
-                document.getElementById('btn-imprimir').style.display = 'inline-flex';
 
-                // 1. Preencher os Indicadores Rápidos
+                // Indicadores Rápidos
                 document.getElementById('ind-total').textContent = dados.resumo.total_procedimentos;
                 document.getElementById('ind-meses').textContent = dados.resumo.meses_com_registro;
                 document.getElementById('ind-dias').textContent = dados.resumo.dias_com_registro;
-                document.getElementById('ind-media').textContent = dados.resumo.media_por_dia_registrado;
+                document.getElementById('ind-pico').textContent = dados.resumo.maior_volume_dia.quantidade > 0
+                    ? `${dados.resumo.maior_volume_dia.quantidade}`
+                    : '-';
 
-                // 2. Preencher a Leitura Gerencial
-                document.getElementById('txt-media-registada').textContent = dados.resumo.media_por_dia_registrado;
+                // Resumo Executivo
+                document.getElementById('txt-media-registrada').textContent = dados.resumo.media_por_dia_registrado;
+                document.getElementById('txt-pct-efetiva').textContent = dados.resumo.percentual_dias_efetivos_geral;
+                document.getElementById('txt-dias-uteis-esperados').textContent = dados.resumo.dias_uteis_esperados;
                 document.getElementById('txt-media-teorica').textContent = dados.resumo.media_por_dia_esperado;
 
-                // 3. Montar o Gráfico com Chart.js
-                const labelsMeses = dados.evolucao_mensal.map(item => item.mes);
-                const dadosGrafico = dados.evolucao_mensal.map(item => item.quantidade);
+                // Gráfico Chart.js
+                const labelsMeses = dados.evolucao_mensal.map(m => m.mes);
+                const dadosGrafico = dados.evolucao_mensal.map(m => m.quantidade);
 
+                if (chartInstance) chartInstance.destroy();
                 const ctx = document.getElementById('graficoEvolucao').getContext('2d');
-                new Chart(ctx, {
+                chartInstance = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: labelsMeses,
                         datasets: [{
-                            label: 'Quantidade de procedimentos',
+                            label: 'Procedimentos',
                             data: dadosGrafico,
                             backgroundColor: '#2563eb',
                             borderColor: '#1e40af',
@@ -181,43 +266,78 @@
                     }
                 });
 
-                // 4. Preencher a Tabela de Evolução Mensal
+                // Tabela de Evolução Mensal
                 const tbody = document.getElementById('tabela-corpo');
-                dados.evolucao_mensal.forEach(item => {
+                tbody.innerHTML = '';
+                dados.evolucao_mensal.forEach(m => {
                     const tr = document.createElement('tr');
                     tr.className = "border-b";
                     tr.innerHTML = `
-                        <td class="px-4 py-2 font-medium">${item.mes} / ${ano}</td>
-                        <td class="px-4 py-2 text-right">${item.quantidade}</td>
-                        <td class="px-4 py-2 text-right">${item.dias_com_registro}</td>
-                        <td class="px-4 py-2 text-right">${item.media_dia}</td>
+                        <td class="px-3 py-2 font-medium">${m.mes}/${ano}</td>
+                        <td class="px-3 py-2 text-right">${m.dias_calendario}</td>
+                        <td class="px-3 py-2 text-right">${m.dias_uteis}</td>
+                        <td class="px-3 py-2 text-right">${m.dias_com_registro}</td>
+                        <td class="px-3 py-2 text-right">${m.percentual_dias_efetivos}%</td>
+                        <td class="px-3 py-2 text-right font-medium">${m.quantidade}</td>
+                        <td class="px-3 py-2 text-right">${m.media_dia > 0 ? m.media_dia : '-'}</td>
                     `;
                     tbody.appendChild(tr);
                 });
 
-                // Totaís do Rodapé da Tabela
-                document.getElementById('tab-total-procedimentos').textContent = dados.resumo.total_procedimentos;
-                document.getElementById('tab-total-dias').textContent = dados.resumo.dias_com_registro;
-                document.getElementById('tab-media-geral').textContent = dados.resumo.media_por_dia_registrado;
+                // Rodapé da Tabela
+                document.getElementById('tab-tot-calendario').textContent = dados.resumo.total_dias_calendario;
+                document.getElementById('tab-tot-uteis').textContent = dados.resumo.dias_uteis_esperados;
+                document.getElementById('tab-tot-registrados').textContent = dados.resumo.dias_com_registro;
+                document.getElementById('tab-tot-pct').textContent = `${dados.resumo.percentual_dias_efetivos_geral}%`;
+                document.getElementById('tab-tot-procedimentos').textContent = dados.resumo.total_procedimentos;
+                document.getElementById('tab-tot-media').textContent = dados.resumo.media_por_dia_registrado;
 
-                // 5. Preencher a Tabela SIGTAP
+                // Seção 3 - Distribuição dos Registros Diários
+                const txtDist = document.getElementById('txt-distribuicao-resumo');
+                if (dados.resumo.maior_volume_dia.quantidade > 0) {
+                    txtDist.innerHTML = `Foram identificados <strong>${dados.resumo.dias_com_registro} dias com movimentação</strong> no período. O maior volume diário ocorreu em <strong>${dados.resumo.maior_volume_dia.data}</strong>, com <strong>${dados.resumo.maior_volume_dia.quantidade} procedimentos</strong>.`;
+                } else {
+                    txtDist.textContent = "Não foram encontrados registros diários de produção no período informado.";
+                }
+
+                const gridDias = document.getElementById('grid-dias-container');
+                gridDias.innerHTML = '';
+                dados.registros_diarios.forEach(d => {
+                    const card = document.createElement('div');
+                    card.className = "flex justify-between items-center p-2 rounded bg-gray-50 border border-gray-200";
+                    card.innerHTML = `
+                        <span class="font-mono text-gray-700">${d.data}</span>
+                        <span class="font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">${d.quantidade}</span>
+                    `;
+                    gridDias.appendChild(card);
+                });
+
+                // Seção 4 - SIGTAP
                 const tbodySigtap = document.getElementById('tabela-sigtap');
-                dados.detalhamento.forEach(item => {
+                tbodySigtap.innerHTML = '';
+                dados.detalhamento.forEach(s => {
                     const tr = document.createElement('tr');
                     tr.className = "border-b";
                     tr.innerHTML = `
-                        <td class="px-4 py-2 font-mono text-gray-500">${item.codigo_sigtap}</td>
-                        <td class="px-4 py-2 font-medium">${item.procedimento}</td>
-                        <td class="px-4 py-2 text-right">${item.quantidade}</td>
+                        <td class="px-4 py-2 font-mono text-gray-500">${s.codigo_sigtap}</td>
+                        <td class="px-4 py-2 font-medium">${s.procedimento}</td>
+                        <td class="px-4 py-2 text-right font-bold">${s.quantidade}</td>
                     `;
                     tbodySigtap.appendChild(tr);
                 });
 
-            } catch (error) {
-                console.error(error);
-                document.getElementById('loading').innerHTML = `<p class="text-red-600 font-bold">Ocorreu um erro ao extrair os dados. Verifique a consola.</p>`;
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading').innerHTML = `<p class="text-red-600 font-bold">Erro ao carregar dados do profissional.</p>`;
             }
+        }
+
+        document.getElementById('form-filtros').addEventListener('submit', (e) => {
+            e.preventDefault();
+            carregarRelatorio();
         });
+
+        document.addEventListener('DOMContentLoaded', carregarRelatorio);
     </script>
 </body>
 </html>
