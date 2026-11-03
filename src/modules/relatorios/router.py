@@ -3,12 +3,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.db.database import get_db
+from src.db.database import get_db_session
 from src.modules.relatorios.schemas import ProfissionalPerfil
 from src.modules.relatorios.service import service
 
 router = APIRouter(prefix="/api/relatorios", tags=["Relatórios de Produção"])
-DbSession = Annotated[AsyncSession, Depends(get_db)]
+DbSession = Annotated[AsyncSession, Depends(get_db_session)]
 
 
 @router.get(
@@ -98,7 +98,9 @@ async def api_relatorio_procedimentos(
     ano: int = Query(..., description="Ano do relatório"),
     mes_inicio: int = Query(..., ge=1, le=12, description="Mês inicial numérico"),
     mes_fim: int = Query(..., ge=1, le=12, description="Mês final numérico"),
-    dias_desconto: int = Query(0, ge=0, description="Dias a descontar (férias, atestados, facultativos)"),
+    dias_desconto: int = Query(
+        0, ge=0, description="Dias a descontar (férias, atestados, facultativos)"
+    ),
     session: DbSession = None,
 ):
     return await service.gerar_relatorio_procedimentos(
