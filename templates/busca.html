@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel e-SUS - Busca Dinâmica</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .dropdown-scroll::-webkit-scrollbar { width: 8px; }
+        .dropdown-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-10 font-sans">
+
+    <div class="max-w-xl mx-auto bg-white p-8 rounded-lg shadow-md border border-gray-200">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Selecione o Profissional</h1>
+        
+        <div class="relative">
+            <label for="input-busca" class="block text-sm font-semibold text-gray-700 mb-2">
+                Nome do Profissional (Digite ao menos 5 letras):
+            </label>
+            
+            <input type="text" id="input-busca" autocomplete="off" placeholder="Ex: Fernando..." 
+                   class="w-full border border-gray-300 rounded-md shadow-sm p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            
+            <div id="dropdown" class="absolute z-20 w-full mt-2 bg-white border border-gray-200 rounded-md shadow-xl hidden">
+                <ul id="lista-resultados" class="max-h-64 overflow-y-auto dropdown-scroll"></ul>
+                
+                <div id="status-busca" class="p-3 text-sm text-gray-500 text-center font-medium bg-gray-50 hidden">Buscando...</div>
+                
+                <div id="paginacao" class="border-t border-gray-100 p-2 text-center bg-gray-50 hidden rounded-b-md">
+                    <button id="btn-carregar-mais" class="w-full text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-100 font-semibold py-2 rounded transition-colors">
+                        Exibir mais resultados
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="feedback-selecao" class="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-md hidden">
+            <h3 class="font-bold text-blue-800">Profissional Selecionado:</h3>
+            <p id="nome-selecionado" class="text-blue-900 font-medium"></p>
+            <p id="id-selecionado" class="text-blue-700 text-sm mt-1"></p>
+            <p id="grupos-selecionado" class="text-blue-700 text-xs mt-1 italic"></p>
+            <!-- AQUI: Botão adicionado para redirecionar ao relatório -->
+            <div class="mt-4">
+                <button id="btn-gerar-relatorio" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-semibold shadow transition-colors">
+                    Gerar Relatório Gerencial
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const inputBusca = document.getElementById('input-busca');
+    const dropdown = document.getElementById('dropdown');
+    const listaResultados = document.getElementById('lista-resultados');
+    const statusBusca = document.getElementById('status-busca');
+    const containerPaginacao = document.getElementById('paginacao');
+    const btnCarregarMais = document.getElementById('btn-carregar-mais');
+    const feedbackBox = document.getElementById('feedback-selecao');
+
+    let debounceTimer;
+    let paginaAtual = 1;
+    let termoAtual = '';
+    let carregando = false;
+
+    inputBusca.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        const termo = e.target.value.trim();
+        
+        feedbackBox.classList.add('hidden');
+
+        if (termo.length < 5) {
+            dropdown.classList.add('hidden');
+            return;
+        }
+
+        debounceTimer = setTimeout(() => {
+            termoAtual = termo;
+            paginaAtual = 1;
+            listaResultados.innerHTML = ''; 
+            dispararBuscaAPI(true);
+        }, 400); 
+    });
+
+    btnCarregarMais.addEventListener('click', () => {
+        paginaAtual++;
+        dispararBuscaAPI(false);
+    });
+
+    async function dispararBuscaAPI(novaBusca) {
+        if (carregando) return;
+        
+        carregando = true;
+        dropdown.classList.remove('hidden');
+        
+        if (novaBusca) {
+            statusBusca.classList.remove('hidden');
+            statusBusca.textContent = "Buscando no banco de dados...";
+            containerPaginacao.classList.add('hidden');
+        } else {
+            btnCarregarMais.textContent = "Carregando...";
+            btnCarregarMais.disabled = true;
+        }
+
+        try {
+            const resposta = await fetch(`/api/relatorios/profissionais?q=${encodeURIComponent(termoAtual)}&page=${paginaAtual}&size=10`);
+            const dados = await resposta.json();
+            
+            statusBusca.classList.add('hidden');
+
+            if (dados.itens.length === 0 && novaBusca) {
+                statusBusca.classList.remove('hidden');
+                statusBusca.textContent = "Nenhum profissional encontrado.";
+                return;
+            }
+
+            dados.itens.forEach(prof => {
+                const li = document.createElement('li');
+                li.className = "cursor-pointer p-3 hover:bg-blue-50 border-b border-gray-100 last:border-0 transition-colors";
+                
+                const grupoTag = prof.grupos.length > 0 
+                    ? `<span class="inline-block bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded mr-1">${prof.grupos[0]}</span>`
+                    : `<span class="inline-block bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded">Sem Perfil</span>`;
+
+                li.innerHTML = `
+                    <div class="font-medium text-gray-800">${prof.nome}</div>
+                    <div class="mt-1">${grupoTag}</div>
+                `;
+                
+                li.addEventListener('click', () => {
+                    inputBusca.value = prof.nome;
+                    dropdown.classList.add('hidden');
+                    
+                    feedbackBox.classList.remove('hidden');
+                    document.getElementById('nome-selecionado').textContent = prof.nome;
+                    document.getElementById('id-selecionado').textContent = `ID Neon: ${prof.id_profissional}`;
+                    document.getElementById('grupos-selecionado').textContent = `Perfis: ${prof.grupos.join(', ')}`;
+                    
+                    // AQUI: Ação do botão para abrir o relatório
+                    const btnGerar = document.getElementById('btn-gerar-relatorio');
+                    btnGerar.onclick = () => {
+                        window.location.href = `/relatorio/${prof.id_profissional}?nome=${encodeURIComponent(prof.nome)}`;
+                    };
+                });
+                
+                listaResultados.appendChild(li);
+            });
+
+            if (paginaAtual < dados.total_paginas) {
+                containerPaginacao.classList.remove('hidden');
+                btnCarregarMais.textContent = `Exibir mais resultados (Página ${paginaAtual + 1})`;
+                btnCarregarMais.disabled = false;
+            } else {
+                containerPaginacao.classList.add('hidden');
+            }
+
+        } catch (error) {
+            statusBusca.classList.remove('hidden');
+            statusBusca.textContent = "Erro de conexão com a API.";
+        } finally {
+            carregando = false;
+        }
+    }
+
+    document.addEventListener('click', (e) => {
+        if (!inputBusca.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+</script>
+</body>
+</html>
