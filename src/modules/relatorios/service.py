@@ -692,11 +692,12 @@ class RelatoriosService:
         dias_uteis_esperados = (
             self._calcular_dias_uteis(ano, mes_inicio, mes_fim) - dias_desconto
         )
-        if dias_uteis_esperados < 0:
-            dias_uteis_esperados = 0
+        dias_uteis_esperados = max(dias_uteis_esperados, 0)
 
         media_dia_registrado = (
-            round(total_geral / total_dias_registro, 2) if total_dias_registro > 0 else 0
+            round(total_geral / total_dias_registro, 2)
+            if total_dias_registro > 0
+            else 0
         )
         media_dia_teorico = (
             round(total_geral / dias_uteis_esperados, 2)
