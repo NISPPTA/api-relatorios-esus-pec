@@ -1,3 +1,4 @@
+import calendar
 from typing import Any
 
 from sqlalchemy import text
@@ -167,6 +168,15 @@ class RelatoriosService:
             for chave in chaves_resolvidas
             if chave in CATALOGO_RELATORIOS
         ]
+
+    def _calcular_dias_uteis(self, ano: int, mes_inicio: int, mes_fim: int) -> int:
+        """Calcula o total de dias de segunda a sexta-feira no intervalo de meses."""
+        dias_uteis = 0
+        for mes in range(mes_inicio, mes_fim + 1):
+            matriz_mes = calendar.monthcalendar(ano, mes)
+            for semana in matriz_mes:
+                dias_uteis += sum(1 for dia in semana[:5] if dia != 0)
+        return dias_uteis
 
     async def listar_profissionais(
         self,
@@ -510,6 +520,201 @@ class RelatoriosService:
             "colunas": meses_selecionados + ["total"],
             "matriz": dados_matriz,
             "resumo": linha_total,
+        }
+
+    async def gerar_relatorio_visitas(
+        self,
+        session: AsyncSession,
+        id_profissional: int,
+        ano: int,
+        mes_inicio: int,
+        mes_fim: int,
+    ) -> dict[str, Any]:
+        """Gera o boletim detalhado de Visitas Domiciliares para ACS/ACE."""
+
+        sql_desfecho = """
+            SELECT 
+                d.ds_desfecho_visita AS desfecho,
+                COUNT(1) AS total
+            FROM tb_fat_visita_domiciliar f
+            JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = f.co_dim_tempo
+            JOIN tb_dim_desfecho_visita d ON d.co_seq_dim_desfecho_visita = f.co_dim_desfecho_visita
+            WHERE f.co_dim_profissional = :id_prof
+              AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+            GROUP BY d.ds_desfecho_visita
+            ORDER BY total DESC;
+        """
+
+        sql_motivos = """
+            SELECT 
+                COALESCE(SUM(f.st_mot_vis_cad_att), 0) AS visitas_cadastro_atualizacao,
+                COALESCE(SUM(f.st_mot_vis_visita_periodica), 0) AS visitas_periodicas,
+                COALESCE(SUM(f.st_mot_vis_busca_ativa), 0) AS busca_ativa,
+                COALESCE(SUM(f.st_acomp_gestante), 0) AS acomp_gestantes,
+                COALESCE(SUM(f.st_acomp_puerpera), 0) AS acomp_puerperas,
+                COALESCE(SUM(f.st_acomp_recem_nascido), 0) AS acomp_recem_nascidos,
+                COALESCE(SUM(f.st_acomp_crianca), 0) AS acomp_criancas,
+                COALESCE(SUM(f.st_acomp_pessoa_hipertensao), 0) AS acomp_hipertensos,
+                COALESCE(SUM(f.st_acomp_pessoa_diabetes), 0) AS acomp_diabeticos,
+                COALESCE(SUM(f.st_acomp_pessoa_idosa), 0) AS acomp_idosos,
+                COALESCE(SUM(f.st_ctrl_amb_vet_imovel_foco), 0) AS endemias_imovel_foco,
+                COALESCE(SUM(f.st_ctrl_amb_vet_tratamnt_focal), 0) AS endemias_tratamento_focal
+            FROM tb_fat_visita_domiciliar f
+            JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = f.co_dim_tempo
+            WHERE f.co_dim_profissional = :id_prof
+              AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim;
+        """
+
+        parametros = {
+            "id_prof": id_profissional,
+            "ano": ano,
+            "mes_inicio": mes_inicio,
+            "mes_fim": mes_fim,
+        }
+
+        res_desfechos = await session.execute(text(sql_desfecho), parametros)
+        res_motivos = await session.execute(text(sql_motivos), parametros)
+
+        linhas_desfechos = res_desfechos.mappings().all()
+        linha_motivo = res_motivos.mappings().first()
+
+        dados_desfechos = [
+            {"desfecho": r["desfecho"], "total": r["total"]} for r in linhas_desfechos
+        ]
+        total_visitas = sum(r["total"] for r in dados_desfechos)
+
+        motivos = {k: int(v) for k, v in linha_motivo.items()} if linha_motivo else {}
+
+        return {
+            "resumo": {"total_visitas_registradas": total_visitas},
+            "desfechos": dados_desfechos,
+            "motivos_e_acompanhamentos": motivos,
+        }
+
+    async def gerar_relatorio_procedimentos(
+        self,
+        session: AsyncSession,
+        id_profissional: int,
+        ano: int,
+        mes_inicio: int,
+        mes_fim: int,
+        dias_desconto: int = 0,
+    ) -> dict[str, Any]:
+        """Gera o boletim de Procedimentos SIGTAP com evolução mensal e eficiência."""
+
+        # 1. Query Detalhada por SIGTAP
+        sql_sigtap = """
+            SELECT 
+                p.co_proced AS codigo_sigtap,
+                p.ds_proced AS procedimento,
+                COUNT(1) AS quantidade
+            FROM tb_fat_proced_atend_proced fp
+            JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fp.co_dim_tempo
+            JOIN tb_dim_procedimento p ON p.co_seq_dim_procedimento = fp.co_dim_procedimento
+            WHERE fp.co_dim_profissional = :id_prof
+              AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+            GROUP BY p.co_proced, p.ds_proced
+            ORDER BY quantidade DESC;
+        """
+
+        # 2. Query de Evolução Mensal
+        sql_evolucao = """
+            SELECT 
+                t.nu_mes AS mes,
+                COUNT(1) AS quantidade,
+                COUNT(DISTINCT fp.co_dim_tempo) as dias_com_registro
+            FROM tb_fat_proced_atend_proced fp
+            JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fp.co_dim_tempo
+            WHERE fp.co_dim_profissional = :id_prof
+              AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+            GROUP BY t.nu_mes
+            ORDER BY t.nu_mes;
+        """
+
+        parametros = {
+            "id_prof": id_profissional,
+            "ano": ano,
+            "mes_inicio": mes_inicio,
+            "mes_fim": mes_fim,
+        }
+
+        res_sigtap = await session.execute(text(sql_sigtap), parametros)
+        res_evolucao = await session.execute(text(sql_evolucao), parametros)
+
+        linhas_sigtap = res_sigtap.mappings().all()
+        linhas_evolucao = res_evolucao.mappings().all()
+
+        detalhamento = [
+            {
+                "codigo_sigtap": r["codigo_sigtap"],
+                "procedimento": r["procedimento"],
+                "quantidade": r["quantidade"],
+            }
+            for r in linhas_sigtap
+        ]
+
+        evolucao_mensal = []
+        meses_nomes = {
+            1: "Jan",
+            2: "Fev",
+            3: "Mar",
+            4: "Abr",
+            5: "Mai",
+            6: "Jun",
+            7: "Jul",
+            8: "Ago",
+            9: "Set",
+            10: "Out",
+            11: "Nov",
+            12: "Dez",
+        }
+
+        total_geral = 0
+        total_dias_registro = 0
+
+        for r in linhas_evolucao:
+            total_geral += r["quantidade"]
+            total_dias_registro += r["dias_com_registro"]
+            evolucao_mensal.append(
+                {
+                    "mes": meses_nomes.get(r["mes"], str(r["mes"])),
+                    "quantidade": r["quantidade"],
+                    "dias_com_registro": r["dias_com_registro"],
+                    "media_dia": (
+                        round(r["quantidade"] / r["dias_com_registro"], 2)
+                        if r["dias_com_registro"] > 0
+                        else 0
+                    ),
+                }
+            )
+
+        # Cálculo de Eficiência Teórica (Calendário)
+        dias_uteis_esperados = (
+            self._calcular_dias_uteis(ano, mes_inicio, mes_fim) - dias_desconto
+        )
+        if dias_uteis_esperados < 0:
+            dias_uteis_esperados = 0
+
+        media_dia_registrado = (
+            round(total_geral / total_dias_registro, 2) if total_dias_registro > 0 else 0
+        )
+        media_dia_teorico = (
+            round(total_geral / dias_uteis_esperados, 2)
+            if dias_uteis_esperados > 0
+            else 0
+        )
+
+        return {
+            "resumo": {
+                "total_procedimentos": total_geral,
+                "meses_com_registro": len(evolucao_mensal),
+                "dias_com_registro": total_dias_registro,
+                "dias_uteis_esperados": dias_uteis_esperados,
+                "media_por_dia_registrado": media_dia_registrado,
+                "media_por_dia_esperado": media_dia_teorico,
+            },
+            "evolucao_mensal": evolucao_mensal,
+            "detalhamento": detalhamento,
         }
 
 
