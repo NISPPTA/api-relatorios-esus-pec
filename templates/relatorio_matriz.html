@@ -15,12 +15,13 @@
             .no-print { display: none !important; }
             .print-shadow-none { box-shadow: none !important; border: none !important; padding: 0 !important; }
             table { width: 100% !important; table-layout: fixed; }
-            th, td { font-size: 10px !important; padding: 4px 2px !important; word-break: break-word; }
+            th, td { font-size: 10px !important; padding: 5px 3px !important; word-break: break-word; }
         }
     </style>
 </head>
 <body class="bg-gray-100 p-6 font-sans text-gray-800">
 
+    <!-- Barra de Filtros (Não-Imprimível) -->
     <div class="max-w-6xl mx-auto bg-white p-4 rounded-lg shadow mb-6 border border-gray-200 no-print">
         <form id="form-filtros" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
             <div>
@@ -30,7 +31,7 @@
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Início</label>
-                <select id="select-mes-inicio" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
+                <select id="select-mes-inicio" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500">
                     <option value="1">Janeiro (01)</option>
                     <option value="2">Fevereiro (02)</option>
                     <option value="3">Março (03)</option>
@@ -47,7 +48,7 @@
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Fim</label>
-                <select id="select-mes-fim" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
+                <select id="select-mes-fim" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500">
                     <option value="1">Janeiro (01)</option>
                     <option value="2">Fevereiro (02)</option>
                     <option value="3">Março (03)</option>
@@ -63,7 +64,7 @@
                 </select>
             </div>
             <div class="flex gap-2">
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors">
+                <button type="submit" class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors">
                     Atualizar
                 </button>
                 <a href="/busca" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1.5 px-3 rounded text-sm text-center">
@@ -73,94 +74,190 @@
         </form>
     </div>
 
-    <div class="max-w-6xl mx-auto bg-white p-10 rounded-lg shadow-md print-shadow-none border border-gray-200">
-        <div class="flex justify-between items-start border-b-2 border-indigo-700 pb-4 mb-6">
+    <!-- Conteúdo da Folha A4 em Paisagem -->
+    <div class="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-md print-shadow-none border border-gray-200">
+        
+        <!-- Cabeçalho Oficial -->
+        <div class="flex justify-between items-start border-b-2 border-indigo-900 pb-4 mb-5">
             <div>
-                <h1 class="text-3xl font-bold text-indigo-900 uppercase tracking-wide">Matriz de Produção</h1>
-                <h2 class="text-xl text-gray-600 mt-1">Série Histórica e-SUS PEC (Pivoteada)</h2>
-                <p class="text-sm text-gray-500 mt-2">
-                    Profissional: <strong>{{ nome_profissional }}</strong>
+                <span class="text-xs font-extrabold tracking-widest text-indigo-800 uppercase">Sistema Único de Saúde - Produção Consolidada</span>
+                <h1 class="text-2xl font-black text-gray-900 mt-1 uppercase tracking-tight">Matriz de Produção por Série Histórica</h1>
+                <p class="text-sm text-gray-600 mt-1">
+                    Profissional: <strong class="text-gray-900">{{ nome_profissional }}</strong> | 
+                    Competência: <span id="lbl-periodo-matriz" class="font-medium">Carregando...</span>
                 </p>
             </div>
-            <button onclick="window.print()" class="no-print bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded inline-flex items-center shadow transition-colors">
-                Imprimir / PDF
-            </button>
+
+            <div class="flex items-center gap-4">
+                <!-- Controle de Zeros (Não Imprime) -->
+                <label class="no-print inline-flex items-center gap-2 cursor-pointer bg-gray-50 border border-gray-300 px-3 py-1.5 rounded text-xs font-semibold text-gray-700 hover:bg-gray-100">
+                    <input type="checkbox" id="chk-ocultar-zeros" checked class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                    <span>Ocultar linhas zeradas</span>
+                </label>
+
+                <button onclick="window.print()" class="no-print bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2 px-4 rounded inline-flex items-center shadow transition-colors text-sm">
+                    Imprimir / PDF
+                </button>
+            </div>
         </div>
 
         <div id="loading" class="text-center py-10">
-            <p class="text-indigo-600 font-bold text-lg animate-pulse">Carregando matriz consolidada...</p>
+            <p class="text-indigo-700 font-bold text-base animate-pulse">Consolidando matriz temporal de produção...</p>
         </div>
 
         <div id="conteudo-tabela" style="display: none;" class="overflow-x-auto">
             <table class="w-full text-xs text-left text-gray-700 border border-gray-300">
-                <thead id="thead-matriz" class="bg-indigo-50 text-indigo-900 uppercase font-bold border-b border-gray-300"></thead>
+                <thead id="thead-matriz" class="bg-indigo-900 text-white uppercase font-bold border-b border-gray-300"></thead>
                 <tbody id="tbody-matriz" class="divide-y divide-gray-200"></tbody>
-                <tfoot id="tfoot-matriz" class="bg-gray-100 font-bold border-t-2 border-gray-400"></tfoot>
+                <tfoot id="tfoot-matriz" class="bg-indigo-50 font-black border-t-2 border-indigo-900"></tfoot>
             </table>
+
+            <!-- Legenda de Heatmap -->
+            <div class="mt-4 flex items-center justify-end gap-2 text-[10px] text-gray-500 font-medium">
+                <span>Concentração Mensal:</span>
+                <span class="inline-block w-4 h-3 bg-indigo-50 border border-indigo-100 rounded-sm"></span> Baixa
+                <span class="inline-block w-4 h-3 bg-indigo-200 border border-indigo-300 rounded-sm"></span> Média
+                <span class="inline-block w-4 h-3 bg-indigo-500 border border-indigo-600 rounded-sm"></span> Alta
+                <span class="inline-block w-4 h-3 bg-indigo-800 rounded-sm"></span> Pico Máximo
+            </div>
         </div>
     </div>
+
     <script>
         const idProfissional = {{ id_profissional }};
+        let dadosCarregados = null;
 
-        // 1. Inicializa os seletores imediatamente com os parâmetros da URL/Jinja2
+        // Inicialização imediata dos filtros da URL/Jinja2
         document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
         document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";
+
+        const mesesAbrev = {
+            1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
+            7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"
+        };
+
+        // Função do Heatmap: calcula a intensidade da cor da célula proporcional ao pico
+        function obterEstiloHeatmap(valor, maxValor) {
+            if (valor === 0) return { classe: "text-gray-300 bg-white", texto: "-" };
+            if (!maxValor || maxValor === 0) return { classe: "text-gray-900 bg-white", texto: valor };
+
+            const ratio = valor / maxValor;
+
+            if (ratio >= 0.75) {
+                return { classe: "bg-indigo-800 text-white font-bold", texto: valor };
+            } else if (ratio >= 0.40) {
+                return { classe: "bg-indigo-500 text-white font-semibold", texto: valor };
+            } else if (ratio >= 0.15) {
+                return { classe: "bg-indigo-200 text-indigo-950 font-medium", texto: valor };
+            } else {
+                return { classe: "bg-indigo-50 text-indigo-900", texto: valor };
+            }
+        }
+
+        function renderizarMatriz() {
+            if (!dadosCarregados) return;
+
+            const dados = dadosCarregados;
+            const ocultarZeros = document.getElementById('chk-ocultar-zeros').checked;
+
+            // 1. Cabeçalho
+            const thead = document.getElementById('thead-matriz');
+            let headerHtml = '<tr><th class="p-2.5 text-left border-r border-indigo-800">Categoria e-SUS PEC</th>';
+            dados.colunas.forEach(col => {
+                headerHtml += `<th class="p-2.5 text-center uppercase tracking-wider text-[11px] border-r border-indigo-800 last:border-r-0">${col}</th>`;
+            });
+            headerHtml += '</tr>';
+            thead.innerHTML = headerHtml;
+
+            // 2. Cálculo do Maior Valor Mensal (para cálculo do Heatmap)
+            let maxMensal = 0;
+            dados.matriz.forEach(linha => {
+                dados.colunas.forEach(col => {
+                    if (col !== 'total') {
+                        const v = linha[col] || 0;
+                        if (v > maxMensal) maxMensal = v;
+                    }
+                });
+            });
+
+            // 3. Renderização das Linhas (com Supressão de Zeros)
+            const tbody = document.getElementById('tbody-matriz');
+            tbody.innerHTML = '';
+            let linhasExibidas = 0;
+
+            dados.matriz.forEach(linha => {
+                const totalLinha = linha.total || 0;
+                if (ocultarZeros && totalLinha === 0) return;
+
+                linhasExibidas++;
+                let tr = `<tr class="hover:bg-gray-100 transition">
+                    <td class="p-2.5 font-bold text-gray-900 border-r border-gray-200 bg-gray-50">${linha.categoria}</td>`;
+
+                dados.colunas.forEach(col => {
+                    const val = linha[col] || 0;
+
+                    if (col === 'total') {
+                        tr += `<td class="p-2.5 text-center font-black text-indigo-950 bg-indigo-100 border-l-2 border-indigo-300 text-sm">${val}</td>`;
+                    } else {
+                        const heat = obterEstiloHeatmap(val, maxMensal);
+                        tr += `<td class="p-2.5 text-center border-r border-gray-200 ${heat.classe}">${heat.texto}</td>`;
+                    }
+                });
+
+                tr += '</tr>';
+                tbody.innerHTML += tr;
+            });
+
+            if (linhasExibidas === 0) {
+                tbody.innerHTML = `<tr><td colspan="${dados.colunas.length + 1}" class="p-6 text-center text-gray-500 italic">Nenhum registro encontrado no período selecionado.</td></tr>`;
+            }
+
+            // 4. Rodapé de Totais Gerais
+            const tfoot = document.getElementById('tfoot-matriz');
+            let footerHtml = `<tr><td class="p-2.5 text-indigo-950 uppercase font-black border-r border-gray-300 bg-indigo-100">${dados.resumo.categoria}</td>`;
+            dados.colunas.forEach(col => {
+                const valTotal = dados.resumo[col] || 0;
+                if (col === 'total') {
+                    footerHtml += `<td class="p-2.5 text-center text-indigo-950 font-black border-l-2 border-indigo-400 bg-indigo-200 text-sm">${valTotal}</td>`;
+                } else {
+                    footerHtml += `<td class="p-2.5 text-center text-indigo-950 font-black border-r border-gray-300">${valTotal === 0 ? '-' : valTotal}</td>`;
+                }
+            });
+            footerHtml += '</tr>';
+            tfoot.innerHTML = footerHtml;
+        }
 
         async function carregarMatriz() {
             const ano = document.getElementById('input-ano').value;
             const mesInicio = document.getElementById('select-mes-inicio').value;
             const mesFim = document.getElementById('select-mes-fim').value;
 
+            document.getElementById('lbl-periodo-matriz').textContent = `${mesesAbrev[mesInicio]}/${ano} a ${mesesAbrev[mesFim]}/${ano}`;
             document.getElementById('loading').style.display = 'block';
             document.getElementById('conteudo-tabela').style.display = 'none';
 
             try {
                 const resp = await fetch(`/api/relatorios/profissionais/${idProfissional}/matriz-producao?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}`);
-                const dados = await resp.json();
+                if (!resp.ok) throw new Error("Erro na requisição.");
+                dadosCarregados = await resp.json();
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('conteudo-tabela').style.display = 'block';
 
-                // Cabeçalho dinâmico
-                const thead = document.getElementById('thead-matriz');
-                let headerHtml = '<tr><th class="p-3">Categoria e-SUS PEC</th>';
-                dados.colunas.forEach(col => {
-                    headerHtml += `<th class="p-3 text-right uppercase">${col}</th>`;
-                });
-                headerHtml += '</tr>';
-                thead.innerHTML = headerHtml;
-
-                // Linhas
-                const tbody = document.getElementById('tbody-matriz');
-                tbody.innerHTML = '';
-                dados.matriz.forEach(linha => {
-                    let tr = `<tr class="hover:bg-gray-50"><td class="p-3 font-medium text-gray-900 border-r">${linha.categoria}</td>`;
-                    dados.colunas.forEach(col => {
-                        const val = linha[col] || 0;
-                        tr += `<td class="p-3 text-right ${col === 'total' ? 'font-bold bg-gray-50 border-l' : ''}">${val}</td>`;
-                    });
-                    tr += '</tr>';
-                    tbody.innerHTML += tr;
-                });
-
-                // Rodapé com Totais Gerais
-                const tfoot = document.getElementById('tfoot-matriz');
-                let footerHtml = `<tr><td class="p-3 text-gray-900 uppercase border-r">${dados.resumo.categoria}</td>`;
-                dados.colunas.forEach(col => {
-                    footerHtml += `<td class="p-3 text-right ${col === 'total' ? 'font-bold text-indigo-900 border-l' : ''}">${dados.resumo[col]}</td>`;
-                });
-                footerHtml += '</tr>';
-                tfoot.innerHTML = footerHtml;
-
+                renderizarMatriz();
             } catch (err) {
+                console.error(err);
                 document.getElementById('loading').innerHTML = '<p class="text-red-600 font-bold">Erro ao carregar matriz consolidada.</p>';
             }
         }
 
+        // Eventos
         document.getElementById('form-filtros').addEventListener('submit', (e) => {
             e.preventDefault();
             carregarMatriz();
         });
+
+        document.getElementById('chk-ocultar-zeros').addEventListener('change', renderizarMatriz);
 
         document.addEventListener('DOMContentLoaded', carregarMatriz);
     </script>
