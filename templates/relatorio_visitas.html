@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boletim Analítico de Visitas Domiciliares</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @media print {
+            body { background-color: white !important; padding: 0 !important; }
+            .no-print { display: none !important; }
+            .print-shadow-none { box-shadow: none !important; border: none !important; padding: 0 !important; }
+            .page-break { page-break-before: always; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6 font-sans text-gray-800">
+
+    <!-- BARRA DE FILTROS DINÂMICA (Invisível na Impressão) -->
+    <div class="max-w-5xl mx-auto bg-white p-4 rounded-lg shadow mb-6 border border-gray-200 no-print">
+        <form id="form-filtros" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Ano</label>
+                <input type="number" id="input-ano" value="{{ filtro_ano }}" min="2020" max="2030"
+                       class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Início</label>
+                <select id="select-mes-inicio" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
+                    <option value="1">Janeiro (01)</option>
+                    <option value="2">Fevereiro (02)</option>
+                    <option value="3">Março (03)</option>
+                    <option value="4">Abril (04)</option>
+                    <option value="5">Maio (05)</option>
+                    <option value="6">Junho (06)</option>
+                    <option value="7">Julho (07)</option>
+                    <option value="8">Agosto (08)</option>
+                    <option value="9">Setembro (09)</option>
+                    <option value="10">Outubro (10)</option>
+                    <option value="11">Novembro (11)</option>
+                    <option value="12">Dezembro (12)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Fim</label>
+                <select id="select-mes-fim" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
+                    <option value="1">Janeiro (01)</option>
+                    <option value="2">Fevereiro (02)</option>
+                    <option value="3">Março (03)</option>
+                    <option value="4">Abril (04)</option>
+                    <option value="5">Maio (05)</option>
+                    <option value="6">Junho (06)</option>
+                    <option value="7">Julho (07)</option>
+                    <option value="8">Agosto (08)</option>
+                    <option value="9">Setembro (09)</option>
+                    <option value="10">Outubro (10)</option>
+                    <option value="11">Novembro (11)</option>
+                    <option value="12">Dezembro (12)</option>
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors">
+                    Atualizar
+                </button>
+                <a href="/busca" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1.5 px-3 rounded text-sm text-center">
+                    Voltar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- FOLHA A4 DO RELATÓRIO -->
+    <div class="max-w-5xl mx-auto bg-white p-10 rounded-lg shadow-md print-shadow-none border border-gray-200">
+        
+        <!-- Cabeçalho -->
+        <div class="flex justify-between items-start border-b-2 border-emerald-700 pb-4 mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-emerald-800 uppercase tracking-wide">Boletim Analítico</h1>
+                <h2 class="text-xl text-gray-600 mt-1">Visitas Domiciliares e Territoriais</h2>
+                <p class="text-sm text-gray-500 mt-2">
+                    Período: <strong id="lbl-periodo-extenso">...</strong> | Profissional: <strong>{{ nome_profissional }}</strong>
+                </p>
+            </div>
+            <button onclick="window.print()" class="no-print bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded inline-flex items-center shadow transition-colors" id="btn-imprimir">
+                <svg class="fill-current w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M4 4h12v4H4V4zm2 2v1h8V6H6zm10 4H4c-1.1 0-2 .9-2 2v5h4v3h8v-3h4v-5c0-1.1-.9-2-2-2zm-2 8H6v-4h8v4zm2-6H6v-1h8v1z"/></svg>
+                Imprimir / PDF
+            </button>
+        </div>
+
+        <div id="loading" class="text-center py-10">
+            <p class="text-emerald-600 font-bold text-lg animate-pulse">A analisar desfechos de visitas...</p>
+        </div>
+
+        <div id="conteudo-relatorio" style="display: none;">
+            
+            <!-- Cards Rápidos de Indicadores -->
+            <div class="grid grid-cols-3 gap-4 mb-8 text-center">
+                <div class="bg-gray-50 p-4 rounded border border-gray-100">
+                    <span id="ind-total" class="block text-3xl font-bold text-emerald-700">-</span>
+                    <span class="text-xs text-gray-500 uppercase">Visitas Registadas</span>
+                </div>
+                <div class="bg-gray-50 p-4 rounded border border-gray-100">
+                    <span id="ind-sucesso" class="block text-3xl font-bold text-emerald-700">-</span>
+                    <span class="text-xs text-gray-500 uppercase">Visitas Realizadas (Sucesso)</span>
+                </div>
+                <div class="bg-gray-50 p-4 rounded border border-gray-100">
+                    <span id="ind-perda" class="block text-3xl font-bold text-red-600">-</span>
+                    <span class="text-xs text-gray-500 uppercase">Ausentes / Recusadas</span>
+                </div>
+            </div>
+
+            <!-- 1. Desfechos de Visita (Gráfico Pizza + Tabela) -->
+            <section class="mb-8">
+                <h3 class="text-lg font-bold text-gray-800 border-b border-gray-300 pb-1 mb-4">1. Efetividade e Desfechos das Visitas</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div class="w-full h-64">
+                        <canvas id="graficoDesfechos"></canvas>
+                    </div>
+                    
+                    <div>
+                        <table class="w-full text-sm text-left text-gray-600 border border-gray-200">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 border-b border-gray-200">
+                                <tr>
+                                    <th class="px-4 py-2">Desfecho</th>
+                                    <th class="px-4 py-2 text-right">Quantidade</th>
+                                    <th class="px-4 py-2 text-right">%</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-desfechos"></tbody>
+                        </table>
+                        
+                        <p class="text-xs text-gray-500 mt-3 p-2 bg-emerald-50 border-l-2 border-emerald-400">
+                            <strong>Nota Gestão:</strong> Uma alta taxa de "Ausentes" sugere necessidade de adequação de horário ou microplaneamento territorial.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Motivos e Acompanhamentos Específicos -->
+            <section class="mb-8 page-break">
+                <h3 class="text-lg font-bold text-gray-800 border-b border-gray-300 pb-1 mb-4">2. Linhas de Cuidado e Acompanhamentos</h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    Quantitativo de focos de ação detetados durante as visitas realizadas (um único cidadão pode estar inserido em múltiplos acompanhamentos na mesma visita).
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="grid-acompanhamentos">
+                    <!-- Gerado por JS -->
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <script>
+    const idProfissional = {{ id_profissional }};
+    let chartDesfechos = null;
+
+    const mesesNomes = {
+        1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho",
+        7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
+    };
+
+    // Dicionário com nomes em português e categorização
+    const dicionarioCampos = {
+        // Ciclos de Vida
+        acomp_gestante: { titulo: "Gestantes", cat: "Ciclos de Vida" },
+        acomp_puerpera: { titulo: "Puérperas", cat: "Ciclos de Vida" },
+        acomp_recem_nascido: { titulo: "Recém-Nascidos", cat: "Ciclos de Vida" },
+        acomp_crianca: { titulo: "Crianças", cat: "Ciclos de Vida" },
+        acomp_pessoa_idosa: { titulo: "Idosos", cat: "Ciclos de Vida" },
+
+        // Linhas de Cuidado (Doenças)
+        acomp_pessoa_hipertensao: { titulo: "Hipertensos", cat: "Condições Crônicas" },
+        acomp_pessoa_diabetes: { titulo: "Diabéticos", cat: "Condições Crônicas" },
+        acomp_pessoa_asma: { titulo: "Asma", cat: "Condições Crônicas" },
+        acomp_pessoa_dpoc_enfisema: { titulo: "DPOC / Enfisema", cat: "Condições Crônicas" },
+        acomp_pessoa_cancer: { titulo: "Câncer", cat: "Condições Crônicas" },
+        acomp_pessoa_doenca_cronica: { titulo: "Outras Doenças Crônicas", cat: "Condições Crônicas" },
+        acomp_pessoa_hanseniase: { titulo: "Hanseníase", cat: "Condições Crônicas" },
+        acomp_pessoa_tuberculose: { titulo: "Tuberculose", cat: "Condições Crônicas" },
+        acomp_sintomaticos_respirat: { titulo: "Sintomático Respiratório", cat: "Condições Crônicas" },
+
+        // Vulnerabilidades
+        acomp_tabagista: { titulo: "Tabagistas", cat: "Vulnerabilidades e Hábitos" },
+        acomp_usuario_alcool: { titulo: "Usuários de Álcool", cat: "Vulnerabilidades e Hábitos" },
+        acomp_usuario_outras_drogra: { titulo: "Usuários de Drogas", cat: "Vulnerabilidades e Hábitos" },
+        acomp_saude_mental: { titulo: "Saúde Mental", cat: "Vulnerabilidades e Hábitos" },
+        acomp_pessoa_desnutricao: { titulo: "Desnutrição", cat: "Vulnerabilidades e Hábitos" },
+        acomp_pessoa_reabil_deficie: { titulo: "Reabilitação / Deficiência", cat: "Vulnerabilidades e Hábitos" },
+        acomp_domiciliados_acamados: { titulo: "Domiciliados / Acamados", cat: "Vulnerabilidades e Hábitos" },
+        acomp_condi_vulnerab_social: { titulo: "Vulnerabilidade Social", cat: "Vulnerabilidades e Hábitos" },
+        acomp_condi_bolsa_familia: { titulo: "Condicionalidade Bolsa Família", cat: "Vulnerabilidades e Hábitos" },
+
+        // Ações e Motivos de Campo
+        mot_vis_acompanhamento: { titulo: "Acompanhamento no Domicílio", cat: "Ações de Campo" },
+        mot_vis_visita_periodica: { titulo: "Visita Periódica / Rotina", cat: "Ações de Campo" },
+        mot_vis_orintacao_prevncao: { titulo: "Orientação e Prevenção", cat: "Ações de Campo" },
+        mot_vis_busca_ativa: { titulo: "Busca Ativa Geral", cat: "Ações de Campo" },
+        mot_vis_cad_att: { titulo: "Atualização de Cadastro", cat: "Ações de Campo" },
+        mot_vis_convte_atvidd_cltva: { titulo: "Convite p/ Atividade Coletiva", cat: "Ações de Campo" },
+        mot_vis_egresso_internacao: { titulo: "Egresso de Internação", cat: "Ações de Campo" },
+        mot_vis_outros: { titulo: "Outros Motivos", cat: "Ações de Campo" },
+        visita_compartilhada: { titulo: "Visita Compartilhada", cat: "Ações de Campo" },
+
+        // Buscas Ativas Focadas
+        busca_ativa_consulta: { titulo: "Busca Ativa: Consulta", cat: "Busca Ativa Direcionada" },
+        busca_ativa_exame: { titulo: "Busca Ativa: Exame", cat: "Busca Ativa Direcionada" },
+        busca_ativa_vacina: { titulo: "Busca Ativa: Vacina", cat: "Busca Ativa Direcionada" },
+        busca_ativa_bolsa_familia: { titulo: "Busca Ativa: Bolsa Família", cat: "Busca Ativa Direcionada" },
+
+        // Vigilância Ambiental (ACE)
+        mot_vis_ctrl_ambnte_vetor: { titulo: "Controle Ambiental/Vetor", cat: "Vigilância Ambiental" },
+        ctrl_amb_vet_imovel_foco: { titulo: "Imóvel com Foco", cat: "Vigilância Ambiental" },
+        ctrl_amb_vet_tratamnt_focal: { titulo: "Tratamento Focal", cat: "Vigilância Ambiental" },
+        ctrl_amb_vet_acao_educativa: { titulo: "Ação Educativa Ambiental", cat: "Vigilância Ambiental" },
+        ctrl_amb_vet_acao_mecanica: { titulo: "Ação Mecânica", cat: "Vigilância Ambiental" }
+    };
+
+    document.getElementById('select-mes-inicio').value = {{ filtro_mes_inicio }};
+    document.getElementById('select-mes-fim').value = {{ filtro_mes_fim }};
+
+    async function carregarRelatorio() {
+        const ano = document.getElementById('input-ano').value;
+        const mesInicio = document.getElementById('select-mes-inicio').value;
+        const mesFim = document.getElementById('select-mes-fim').value;
+
+        document.getElementById('lbl-periodo-extenso').textContent = `${mesesNomes[mesInicio]} a ${mesesNomes[mesFim]} de ${ano}`;
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('conteudo-relatorio').style.display = 'none';
+
+        try {
+            const url = `/api/relatorios/profissionais/${idProfissional}/visitas?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}`;
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error("Erro na requisição.");
+            const dados = await resp.json();
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('conteudo-relatorio').style.display = 'block';
+
+            // Totais e Desfechos
+            const totalVisitas = dados.resumo.total_visitas_registradas;
+            document.getElementById('ind-total').textContent = totalVisitas;
+
+            let visitasRealizadas = 0;
+            let visitasPerdidas = 0;
+            const labelsDesfechos = [];
+            const dadosDesfechos = [];
+            const backgroundColors = [];
+            const tbodyDesfechos = document.getElementById('tabela-desfechos');
+            tbodyDesfechos.innerHTML = '';
+
+            dados.desfechos.forEach(item => {
+                labelsDesfechos.push(item.desfecho);
+                dadosDesfechos.push(item.total);
+
+                if (item.desfecho.toLowerCase().includes("realizada")) {
+                    visitasRealizadas += item.total;
+                    backgroundColors.push('#10b981');
+                } else if (item.desfecho.toLowerCase().includes("ausente")) {
+                    visitasPerdidas += item.total;
+                    backgroundColors.push('#f59e0b');
+                } else if (item.desfecho.toLowerCase().includes("recusada")) {
+                    visitasPerdidas += item.total;
+                    backgroundColors.push('#ef4444');
+                } else {
+                    backgroundColors.push('#94a3b8');
+                }
+
+                const pct = totalVisitas > 0 ? ((item.total / totalVisitas) * 100).toFixed(1) : 0;
+                tbodyDesfechos.innerHTML += `
+                    <tr class="border-b">
+                        <td class="px-4 py-2 font-medium text-gray-700">${item.desfecho}</td>
+                        <td class="px-4 py-2 text-right font-bold text-gray-900">${item.total}</td>
+                        <td class="px-4 py-2 text-right text-gray-500">${pct}%</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('ind-sucesso').textContent = visitasRealizadas;
+            document.getElementById('ind-perda').textContent = visitasPerdidas;
+
+            if (chartDesfechos) chartDesfechos.destroy();
+            const ctx = document.getElementById('graficoDesfechos').getContext('2d');
+            chartDesfechos = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labelsDesfechos,
+                    datasets: [{ data: dadosDesfechos, backgroundColor: backgroundColors, borderWidth: 1 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, animation: { duration: 0 } }
+            });
+
+            // Agrupamento Semântico dos Marcadores
+            const containerMotivos = document.getElementById('grid-acompanhamentos');
+            containerMotivos.innerHTML = '';
+
+            const categorias = {};
+            Object.entries(dados.motivos_e_acompanhamentos).forEach(([campo, qtd]) => {
+                if (qtd > 0) {
+                    const info = dicionarioCampos[campo] || { titulo: campo, cat: "Outros Registros" };
+                    if (!categorias[info.cat]) categorias[info.cat] = [];
+                    categorias[info.cat].push({ nome: info.titulo, total: qtd });
+                }
+            });
+
+            Object.entries(categorias).forEach(([nomeCat, itens]) => {
+                let cardsHtml = '';
+                itens.sort((a, b) => b.total - a.total).forEach(i => {
+                    cardsHtml += `
+                        <div class="flex justify-between items-center p-2.5 bg-gray-50 border border-gray-200 rounded text-xs">
+                            <span class="font-medium text-gray-800">${i.nome}</span>
+                            <span class="font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">${i.total}</span>
+                        </div>
+                    `;
+                });
+
+                containerMotivos.innerHTML += `
+                    <div class="col-span-1 md:col-span-2 mb-2">
+                        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide border-b pb-1 mb-2">${nomeCat}</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">${cardsHtml}</div>
+                    </div>
+                `;
+            });
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById('loading').innerHTML = `<p class="text-red-600 font-bold">Erro ao carregar dados do profissional.</p>`;
+        }
+    }
+
+    document.getElementById('form-filtros').addEventListener('submit', (e) => {
+        e.preventDefault();
+        carregarRelatorio();
+    });
+
+    document.addEventListener('DOMContentLoaded', carregarRelatorio);
+</script>
+</body>
+</html>
