@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Executivo de Conformidade e Desempenho</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @page { size: portrait; margin: 12mm; }
+        @media print {
+            body { background-color: white !important; padding: 0 !important; }
+            .no-print { display: none !important; }
+            .print-shadow-none { box-shadow: none !important; border: none !important; padding: 0 !important; }
+            .avoid-break { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 p-6 font-sans text-slate-800">
+
+    <!-- Barra de Filtros -->
+    <div class="max-w-5xl mx-auto bg-white p-4 rounded-lg shadow mb-6 border border-slate-200 no-print">
+        <form id="form-filtros" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Ano</label>
+                <input type="number" id="input-ano" value="{{ filtro_ano }}" min="2020" max="2030"
+                       class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-slate-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Mês Início</label>
+                <select id="select-mes-inicio" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-slate-500">
+                    <option value="1">Janeiro (01)</option>
+                    <option value="2">Fevereiro (02)</option>
+                    <option value="3">Março (03)</option>
+                    <option value="4">Abril (04)</option>
+                    <option value="5">Maio (05)</option>
+                    <option value="6">Junho (06)</option>
+                    <option value="7">Julho (07)</option>
+                    <option value="8">Agosto (08)</option>
+                    <option value="9">Setembro (09)</option>
+                    <option value="10">Outubro (10)</option>
+                    <option value="11">Novembro (11)</option>
+                    <option value="12">Dezembro (12)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Mês Fim</label>
+                <select id="select-mes-fim" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-slate-500">
+                    <option value="1">Janeiro (01)</option>
+                    <option value="2">Fevereiro (02)</option>
+                    <option value="3">Março (03)</option>
+                    <option value="4">Abril (04)</option>
+                    <option value="5">Maio (05)</option>
+                    <option value="6">Junho (06)</option>
+                    <option value="7">Julho (07)</option>
+                    <option value="8">Agosto (08)</option>
+                    <option value="9">Setembro (09)</option>
+                    <option value="10">Outubro (10)</option>
+                    <option value="11">Novembro (11)</option>
+                    <option value="12">Dezembro (12)</option>
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors">
+                    Atualizar
+                </button>
+                <a href="/busca" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-1.5 px-3 rounded text-sm text-center">
+                    Voltar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Relatório Executivo -->
+    <div class="max-w-5xl mx-auto bg-white p-10 rounded-lg shadow-lg print-shadow-none border border-slate-200">
+        
+        <!-- Cabeçalho Executivo -->
+        <div class="flex justify-between items-start border-b-4 border-slate-800 pb-5 mb-8">
+            <div>
+                <span class="text-xs font-extrabold tracking-widest text-slate-500 uppercase">Secretaria de Saúde - Inteligência Analítica</span>
+                <h1 class="text-3xl font-black text-slate-900 mt-1 tracking-tight">Painel de Conformidade e Desempenho</h1>
+                <p class="text-sm text-slate-600 mt-2">
+                    Auditoria do Profissional: <strong class="text-slate-900 text-base">{{ nome_profissional }}</strong>
+                </p>
+                <p class="text-sm text-slate-600">
+                    Competência Analisada: <span id="lbl-periodo" class="font-medium text-slate-900">...</span>
+                </p>
+            </div>
+            <button onclick="window.print()" class="no-print bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm inline-flex items-center shadow transition-colors">
+                Imprimir Parecer
+            </button>
+        </div>
+
+        <div id="loading" class="text-center py-12">
+            <p class="text-indigo-600 font-bold text-lg animate-pulse">Cruzando bases do e-SUS PEC e processando regras legais...</p>
+        </div>
+
+        <div id="conteudo-relatorio" style="display: none;">
+            
+            <!-- 1. KPIs de Cobertura Global -->
+            <div class="mb-8 avoid-break">
+                <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-3">Métricas Globais de Território</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 print:grid-cols-4 gap-4">
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">População Adscrita</span>
+                        <p id="kpi-cadastros" class="text-3xl font-black text-slate-800 mt-1">0</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Visitas com Sucesso</span>
+                        <p id="kpi-visitas" class="text-3xl font-black text-slate-800 mt-1">0</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Tentativas Totais</span>
+                        <p id="kpi-totais" class="text-3xl font-black text-slate-800 mt-1">0</p>
+                    </div>
+                    <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-lg relative overflow-hidden">
+                        <div class="absolute right-0 top-0 bottom-0 w-2 bg-indigo-500"></div>
+                        <span class="text-[10px] font-black text-indigo-800 uppercase tracking-wider">Taxa de Cobertura</span>
+                        <p id="kpi-taxa" class="text-3xl font-black text-indigo-900 mt-1">0.0</p>
+                        <span class="text-[10px] font-semibold text-indigo-600">visitas / habitante</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Auditoria de Conformidade (Semáforos) -->
+            <div class="mb-8">
+                <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Auditoria Legal e Diretrizes Oficiais</h3>
+                <div class="flex flex-col gap-4" id="container-auditoria">
+                    <!-- Cards injetados via JS -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const idProfissional = {{ id_profissional }};
+        
+        document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
+        document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";
+
+        const configCores = {
+            "verde": {
+                bg: "bg-emerald-50", border: "border-emerald-500", text: "text-emerald-900", label: "text-emerald-700",
+                icon: `<svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+                badge: "CONFORME"
+            },
+            "amarelo": {
+                bg: "bg-amber-50", border: "border-amber-500", text: "text-amber-900", label: "text-amber-700",
+                icon: `<svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
+                badge: "ATENÇÃO"
+            },
+            "vermelho": {
+                bg: "bg-rose-50", border: "border-rose-500", text: "text-rose-900", label: "text-rose-700",
+                icon: `<svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+                badge: "CRÍTICO"
+            }
+        };
+
+        function criarCardAuditoria(titulo, dados) {
+            const status = dados.resultado.status.toLowerCase();
+            const cor = configCores[status] || configCores["amarelo"];
+
+            return `
+                <div class="flex flex-col md:flex-row bg-white border-l-4 ${cor.border} rounded-r-lg shadow-sm border-t border-r border-b border-slate-200 p-5 avoid-break">
+                    <div class="flex items-start md:items-center justify-center md:w-16 mb-4 md:mb-0">
+                        ${cor.icon}
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-1">
+                            <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wide">${titulo}</h4>
+                            <span class="text-[9px] font-black px-2 py-0.5 rounded bg-slate-100 ${cor.label} border border-slate-200">${cor.badge}</span>
+                        </div>
+                        <p class="text-[11px] font-semibold text-slate-500 mb-2">${dados.diretriz}</p>
+                        <p class="text-sm font-bold ${cor.text} bg-white p-2 rounded border border-slate-100 shadow-sm">${dados.resultado.msg}</p>
+                        <p class="text-[10px] text-slate-400 font-medium mt-2">📊 Evidência: ${dados.numeros}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function carregarPainelExecutivo() {
+            const ano = document.getElementById('input-ano').value;
+            const mesInicio = document.getElementById('select-mes-inicio').value;
+            const mesFim = document.getElementById('select-mes-fim').value;
+
+            document.getElementById('lbl-periodo').textContent = `Mês ${mesInicio} a ${mesFim} do ano de ${ano}`;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('conteudo-relatorio').style.display = 'none';
+
+            try {
+                const url = `/api/relatorios/profissionais/${idProfissional}/relatorio-executivo?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}`;
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error("Erro na requisição.");
+                const d = await resp.json();
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('conteudo-relatorio').style.display = 'block';
+
+                // Preencher KPIs
+                document.getElementById('kpi-cadastros').textContent = d.meta_informacao.cidadaos_adscritos;
+                document.getElementById('kpi-visitas').textContent = d.meta_informacao.visitas_com_sucesso;
+                document.getElementById('kpi-totais').textContent = d.meta_informacao.visitas_totais;
+                document.getElementById('kpi-taxa').textContent = d.meta_informacao.taxa_cobertura_habitante;
+
+                // Preencher Auditorias
+                const container = document.getElementById('container-auditoria');
+                container.innerHTML = `
+                    ${criarCardAuditoria("Cobertura e Vínculo Territorial (PNAB)", d.auditoria.pnab)}
+                    ${criarCardAuditoria("Proteção Materno-Infantil (Rede Cegonha)", d.auditoria.materno_infantil)}
+                    ${criarCardAuditoria("Vigilância de Condições Crónicas", d.auditoria.cronicos)}
+                    ${criarCardAuditoria("Equidade e Acessibilidade (SUAS/PCD)", d.auditoria.equidade)}
+                `;
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading').innerHTML = '<p class="text-rose-600 font-bold">Erro ao compilar auditoria executiva.</p>';
+            }
+        }
+
+        document.getElementById('form-filtros').addEventListener('submit', (e) => {
+            e.preventDefault();
+            carregarPainelExecutivo();
+        });
+
+        document.addEventListener('DOMContentLoaded', carregarPainelExecutivo);
+    </script>
+</body>
+</html>
