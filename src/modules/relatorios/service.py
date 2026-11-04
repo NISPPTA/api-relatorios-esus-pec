@@ -1,3 +1,4 @@
+import asyncio
 import calendar
 from typing import Any
 
@@ -99,10 +100,18 @@ CATALOGO_RELATORIOS: dict[str, RelatorioDisponivel] = {
         categoria="Administrativo",
         endpoint_relatorio="/api/relatorios/profissionais/{id_profissional}/cadastros-recepcao",
     ),
+    "relatorio_executivo": RelatorioDisponivel(
+        id="relatorio_executivo",
+        titulo="Painel Executivo de Conformidade e Desempenho",
+        descricao="Auditoria automatizada cruzando visitas, território e regras do Ministério da Saúde",
+        categoria="Gestão e Conformidade",
+        endpoint_relatorio="/api/relatorios/profissionais/{id_profissional}/relatorio-executivo",
+    ),
 }
 
 MAPEAMENTO_GRUPOS: dict[str, list[str]] = {
     "ACS - AGENTE COMUNITÁRIO DE SAÚDE": [
+        "relatorio_executivo",
         "visitas_domiciliares",
         "cadastros_territoriais",
     ],
@@ -822,6 +831,161 @@ class RelatoriosService:
             "evolucao_mensal": evolucao_mensal,
             "registros_diarios": registros_diarios,
             "detalhamento": detalhamento,
+        }
+
+    async def gerar_relatorio_executivo(
+        self,
+        session: AsyncSession,
+        id_profissional: int,
+        ano: int,
+        mes_inicio: int,
+        mes_fim: int,
+    ) -> dict[str, Any]:
+        """
+        Orquestra as 3 queries vitais em paralelo e cruza os dados com base em métricas
+        do Ministério da Saúde, Previne Brasil e MP, gerando alertas (Verde, Amarelo, Vermelho).
+        """
+        
+        # Execução sequencial (a AsyncSession do SQLAlchemy não permite concorrência na mesma transação)
+        cadastros = await self.gerar_relatorio_cadastros(session, id_profissional, ano, mes_inicio, mes_fim)
+        visitas = await self.gerar_relatorio_visitas(session, id_profissional, ano, mes_inicio, mes_fim)
+        matriz = await self.gerar_matriz_producao(session, id_profissional, ano, mes_inicio, mes_fim)
+
+        # 1. Extração Segura de Variáveis (com default 0)
+        # 1.1 Do Cadastro
+        cidadaos_adscritos = int(cadastros.get("total_cadastros_individuais", 0))
+        gestantes_cad = int(cadastros.get("cad_gestantes", 0))
+        hipertensos_cad = int(cadastros.get("cad_hipertensos", 0))
+        diabeticos_cad = int(cadastros.get("cad_diabeticos", 0))
+
+        # 1.2 Das Visitas
+        resumo_visitas = visitas.get("resumo", {})
+        total_visitas = int(resumo_visitas.get("total_visitas_registradas", 0))
+
+        # Filtrar apenas visitas com sucesso (desfecho 'Realizada')
+        visitas_sucesso = sum(
+            int(d["total"])
+            for d in visitas.get("desfechos", [])
+            if "realizada" in d["desfecho"].lower()
+        )
+
+        motivos = visitas.get("motivos_e_acompanhamentos", {})
+        visitas_gestante = int(motivos.get("acomp_gestante", 0))
+        visitas_has = int(motivos.get("acomp_pessoa_hipertensao", 0))
+        visitas_dm = int(motivos.get("acomp_pessoa_diabetes", 0))
+        visitas_acamados = int(motivos.get("acomp_domiciliados_acamados", 0))
+
+        # 2. Lógica de Conformidade Legal e Alertas
+        # 2.1 Cobertura PNAB (Taxa de visitas por habitante)
+        taxa_cobertura = (
+            round((visitas_sucesso / cidadaos_adscritos), 2)
+            if cidadaos_adscritos > 0
+            else 0
+        )
+        if taxa_cobertura >= 1.5:
+            status_pnab = {"status": "verde", "msg": "Cobertura Territorial Excelent"}
+        elif taxa_cobertura >= 1.0:
+            status_pnab = {"status": "verde", "msg": "Cobertura Territorial Conforme"}
+        elif taxa_cobertura >= 0.5:
+            status_pnab = {
+                "status": "amarelo",
+                "msg": "Baixa Cobertura: Necessita Revisão",
+            }
+        else:
+            status_pnab = {
+                "status": "vermelho",
+                "msg": "Risco Crítico de Desassistência e Perda de Repasse",
+            }
+
+        # 2.2 Proteção Materno-Infantil (Rede Cegonha / Previne)
+        if gestantes_cad == 0:
+            status_materno = {
+                "status": "amarelo",
+                "msg": "Nenhuma gestante no cadastro. Busca ativa recomendada.",
+            }
+        else:
+            taxa_gestante = round(visitas_gestante / gestantes_cad, 2)
+            if taxa_gestante >= 1.0:
+                status_materno = {
+                    "status": "verde",
+                    "msg": "Acompanhamento materno satisfatório.",
+                }
+            else:
+                defict = gestantes_cad - visitas_gestante
+                status_materno = {
+                    "status": "vermelho",
+                    "msg": f"Alerta Crítico: {defict} gestantes com possível desassistência ou falha de registro.",
+                }
+
+        # 2.3 Vigilância Epidemiológica de Crónicos
+        # Basta garantir que há mais visitas direcionadas ao agravo do que pacientes doentes.
+        if hipertensos_cad == 0 and diabeticos_cad == 0:
+            status_cronicos = {
+                "status": "amarelo",
+                "msg": "Subnotificação suspeita de doentes crónicos.",
+            }
+        else:
+            visitas_cronicas = visitas_has + visitas_dm
+            pacientes_cronicos = hipertensos_cad + diabeticos_cad
+            if visitas_cronicas >= pacientes_cronicos:
+                status_cronicos = {
+                    "status": "verde",
+                    "msg": "Cobertura de Crónicos Conforme Normativa",
+                }
+            else:
+                status_cronicos = {
+                    "status": "vermelho",
+                    "msg": "Deficit no acompanhamento de grupos de risco",
+                }
+
+        # 2.4 Vulnerabilidade (MP)
+        if visitas_acamados > 0:
+            status_vulnerabilidade = {
+                "status": "verde",
+                "msg": "Assistência ao grupo acamado comprovada",
+            }
+        else:
+            status_vulnerabilidade = {
+                "status": "amarelo",
+                "msg": "Sem registro de acompanhamento a acamados",
+            }
+
+        # 3. Empacotamento do Dossiê para a API
+        return {
+            "meta_informacao": {
+                "cidadaos_adscritos": cidadaos_adscritos,
+                "visitas_com_sucesso": visitas_sucesso,
+                "visitas_totais": total_visitas,
+                "taxa_cobertura_habitante": taxa_cobertura,
+            },
+            "auditoria": {
+                "pnab": {
+                    "diretriz": "Cobertura Universal Territorial (Mínimo 1 visita/hab/ano)",
+                    "resultado": status_pnab,
+                    "numeros": f"{visitas_sucesso} Visitas (Sucesso) para {cidadaos_adscritos} Cadastrados",
+                },
+                "materno_infantil": {
+                    "diretriz": "Rede Cegonha: Prevenção Materno-Infantil",
+                    "resultado": status_materno,
+                    "numeros": f"{visitas_gestante} Registos para {gestantes_cad} Gestantes Cadastradas",
+                },
+                "cronicos": {
+                    "diretriz": "Acompanhamento Contínuo (HAS / DM)",
+                    "resultado": status_cronicos,
+                    "numeros": f"{visitas_has + visitas_dm} Registos para {hipertensos_cad + diabeticos_cad} Doentes",
+                },
+                "equidade": {
+                    "diretriz": "Prioridade e Acessibilidade (Acamados e Domiciliados)",
+                    "resultado": status_vulnerabilidade,
+                    "numeros": f"{visitas_acamados} registos de acompanhamento a domiciliados",
+                },
+            },
+            # Encapsula os relatórios integrais caso o Front-end precise extrair algo a mais
+            "dados_brutos": {
+                "matriz": matriz,
+                "visitas": visitas,
+                "cadastros": cadastros,
+            },
         }
 
 
