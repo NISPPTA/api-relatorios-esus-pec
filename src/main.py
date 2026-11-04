@@ -31,18 +31,42 @@ def create_app() -> FastAPI:
     async def pagina_relatorio(
         request: Request,
         id_profissional: int,
+        tipo: str = "procedimentos_ambulatoriais",
         nome: str = "Profissional",
         ano: int = 2026,
         mes_inicio: int = 5,
         mes_fim: int = 10,
         dias_desconto: int = 0,
     ):
+        # Mapeamento expandido para cobrir todos os 13 relatórios do catálogo
+        templates_map = {
+            # FASE 2: Concluídos
+            "procedimentos_ambulatoriais": "relatorio_procedimentos.html",
+            "visitas_domiciliares": "relatorio_visitas.html",
+            "matriz_serie_historica": "relatorio_matriz.html",
+            # FASE 3 e 4: Em Desenvolvimento (Mapeados para a página de contingência)
+            "cadastros_territoriais": "relatorio_cadastros.html",
+            "visitas_endemias": "em_construcao.html",
+            "consultas_medicas": "em_construcao.html",
+            "consultas_enfermagem": "em_construcao.html",
+            "vacinacao_administrada": "em_construcao.html",
+            "consultas_odontologicas": "em_construcao.html",
+            "procedimentos_odonto": "em_construcao.html",
+            "atendimentos_emulti": "em_construcao.html",
+            "atividades_coletivas": "em_construcao.html",
+            "cadastros_recepcao": "em_construcao.html",
+        }
+
+        # Fallback seguro: se o tipo não existir, mostra em construção
+        template_escolhido = templates_map.get(tipo, "em_construcao.html")
+
         return templates.TemplateResponse(
-            "relatorio.html",
+            template_escolhido,
             {
                 "request": request,
                 "id_profissional": id_profissional,
                 "nome_profissional": nome,
+                "tipo_relatorio": tipo,
                 "filtro_ano": ano,
                 "filtro_mes_inicio": mes_inicio,
                 "filtro_mes_fim": mes_fim,
