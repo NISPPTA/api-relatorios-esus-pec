@@ -18,7 +18,7 @@
 </head>
 <body class="bg-gray-100 p-6 font-sans text-gray-800">
 
-    <!-- BARRA DE FILTROS DINÂMICA (Invisível na Impressão) -->
+    <!-- BARRA DE FILTROS -->
     <div class="max-w-6xl mx-auto bg-white p-4 rounded-lg shadow mb-6 border border-gray-200 no-print">
         <form id="form-filtros" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
             <div>
@@ -29,76 +29,56 @@
             <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Início</label>
                 <select id="select-mes-inicio" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
-                    <option value="1">Janeiro (01)</option>
-                    <option value="2">Fevereiro (02)</option>
-                    <option value="3">Março (03)</option>
-                    <option value="4">Abril (04)</option>
-                    <option value="5">Maio (05)</option>
-                    <option value="6">Junho (06)</option>
-                    <option value="7">Julho (07)</option>
-                    <option value="8">Agosto (08)</option>
-                    <option value="9">Setembro (09)</option>
-                    <option value="10">Outubro (10)</option>
-                    <option value="11">Novembro (11)</option>
-                    <option value="12">Dezembro (12)</option>
+                    <option value="1">Jan (01)</option><option value="2">Fev (02)</option><option value="3">Mar (03)</option>
+                    <option value="4">Abr (04)</option><option value="5">Mai (05)</option><option value="6">Jun (06)</option>
+                    <option value="7">Jul (07)</option><option value="8">Ago (08)</option><option value="9">Set (09)</option>
+                    <option value="10">Out (10)</option><option value="11">Nov (11)</option><option value="12">Dez (12)</option>
                 </select>
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Fim</label>
                 <select id="select-mes-fim" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
-                    <option value="1">Janeiro (01)</option>
-                    <option value="2">Fevereiro (02)</option>
-                    <option value="3">Março (03)</option>
-                    <option value="4">Abril (04)</option>
-                    <option value="5">Maio (05)</option>
-                    <option value="6">Junho (06)</option>
-                    <option value="7">Julho (07)</option>
-                    <option value="8">Agosto (08)</option>
-                    <option value="9">Setembro (09)</option>
-                    <option value="10">Outubro (10)</option>
-                    <option value="11">Novembro (11)</option>
-                    <option value="12">Dezembro (12)</option>
+                    <option value="1">Jan (01)</option><option value="2">Fev (02)</option><option value="3">Mar (03)</option>
+                    <option value="4">Abr (04)</option><option value="5">Mai (05)</option><option value="6">Jun (06)</option>
+                    <option value="7">Jul (07)</option><option value="8">Ago (08)</option><option value="9">Set (09)</option>
+                    <option value="10">Out (10)</option><option value="11">Nov (11)</option><option value="12">Dez (12)</option>
                 </select>
             </div>
             <div class="flex gap-2">
-                <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors">
-                    Atualizar
+                <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors shadow">
+                    Atualizar Indicadores
                 </button>
-                <a href="/busca" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1.5 px-3 rounded text-sm text-center">
-                    Voltar
-                </a>
             </div>
         </form>
     </div>
 
-    <!-- FOLHA A4 DO RELATÓRIO -->
+    <!-- FOLHA DO RELATÓRIO -->
     <div class="max-w-6xl mx-auto bg-white p-10 rounded-lg shadow-md print-shadow-none border border-gray-200">
         
-        <!-- Cabeçalho -->
         <div class="flex justify-between items-start border-b-2 border-emerald-800 pb-4 mb-6">
             <div>
                 <span class="text-xs font-extrabold tracking-widest text-emerald-800 uppercase">Sistema Único de Saúde - Atenção Primária</span>
                 <h1 class="text-2xl font-black text-gray-900 mt-1 uppercase tracking-tight">Boletim Analítico de Visitas</h1>
                 <p class="text-sm text-gray-600 mt-1">
                     Profissional: <strong class="text-gray-900">{{ nome_profissional }}</strong> | 
-                    Período: <span id="lbl-periodo-extenso" class="font-medium">Carregando...</span>
+                    Período: <span id="lbl-periodo-extenso" class="font-medium text-gray-900">...</span>
                 </p>
             </div>
-            <button onclick="window.print()" class="no-print bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-4 rounded inline-flex items-center shadow transition-colors text-sm" id="btn-imprimir">
-                Imprimir / PDF
+            <button onclick="window.print()" class="no-print bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-4 rounded text-sm inline-flex items-center shadow transition-colors gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Imprimir PDF
             </button>
         </div>
 
         <div id="loading" class="text-center py-10">
-            <p class="text-emerald-700 font-bold text-base animate-pulse">A analisar produtividade de campo...</p>
+            <p class="text-emerald-700 font-bold text-base animate-pulse">Analisando produtividade de campo...</p>
         </div>
 
         <div id="conteudo-relatorio" style="display: none;">
             
-            <!-- Cards Rápidos de Indicadores -->
             <div class="grid grid-cols-3 gap-4 mb-6">
                 <div class="p-4 bg-emerald-50 border-l-4 border-emerald-600 rounded shadow-sm">
-                    <span class="text-[10px] font-black text-emerald-800 uppercase tracking-widest">Visitas Registadas</span>
+                    <span class="text-[10px] font-black text-emerald-800 uppercase tracking-widest">Visitas Registradas</span>
                     <p id="ind-total" class="text-3xl font-black text-gray-900 mt-1">0</p>
                     <span class="text-[11px] text-gray-500 font-medium">Total de tentativas no território</span>
                 </div>
@@ -114,10 +94,9 @@
                 </div>
             </div>
 
-            <!-- 1. Desfechos de Visita -->
+            <!-- 1. Desfechos -->
             <section class="mb-6 avoid-break">
                 <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200 pb-1 mb-3">1. Efetividade e Desfechos das Visitas</h3>
-                
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-6 items-center bg-gray-50 p-4 rounded border border-gray-100">
                     <div class="w-full h-48 col-span-2">
                         <canvas id="graficoDesfechos"></canvas>
@@ -137,12 +116,13 @@
                 </div>
             </section>
 
-            <!-- 2. Motivos e Acompanhamentos Específicos (Grid Compacta) -->
+            <!-- 2. Mapeamento e Proporção (Com % agora!) -->
             <section class="avoid-break">
-                <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200 pb-1 mb-3">2. Mapeamento de Focos e Acompanhamentos</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="grid-acompanhamentos">
-                    <!-- Gerado Dinamicamente -->
+                <div class="flex justify-between items-end border-b border-gray-200 pb-1 mb-3">
+                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">2. Mapeamento de Focos e Acompanhamentos</h3>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">% Baseada no Total de Esforço de Campo</span>
                 </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="grid-acompanhamentos"></div>
             </section>
 
         </div>
@@ -152,35 +132,27 @@
     const idProfissional = {{ id_profissional }};
     let chartDesfechos = null;
 
-    const mesesNomes = {
-        1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho",
-        7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
-    };
-
     document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
     document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";
 
     // Dicionário com Cores Semânticas
     const dicionarioCampos = {
-        // Ciclos de Vida (Roxo)
         acomp_gestante: { titulo: "Gestantes", cat: "Ciclos de Vida", color: "fuchsia" },
         acomp_puerpera: { titulo: "Puérperas", cat: "Ciclos de Vida", color: "fuchsia" },
         acomp_recem_nascido: { titulo: "Recém-Nascidos", cat: "Ciclos de Vida", color: "fuchsia" },
         acomp_crianca: { titulo: "Crianças", cat: "Ciclos de Vida", color: "fuchsia" },
         acomp_pessoa_idosa: { titulo: "Idosos", cat: "Ciclos de Vida", color: "fuchsia" },
 
-        // Condições Crônicas (Vermelho)
         acomp_pessoa_hipertensao: { titulo: "Hipertensos", cat: "Condições Crônicas", color: "red" },
         acomp_pessoa_diabetes: { titulo: "Diabéticos", cat: "Condições Crônicas", color: "red" },
         acomp_pessoa_asma: { titulo: "Asma", cat: "Condições Crônicas", color: "red" },
-        acomp_pessoa_dpoc_enfisema: { titulo: "DPOC / Enfisema", cat: "Condições Crônicas", color: "red" },
+        acomp_pessoa_dpoc_enfisema: { titulo: "DPOC/Enfisema", cat: "Condições Crônicas", color: "red" },
         acomp_pessoa_cancer: { titulo: "Câncer", cat: "Condições Crônicas", color: "red" },
         acomp_pessoa_doenca_cronica: { titulo: "Doenças Crônicas (Outras)", cat: "Condições Crônicas", color: "red" },
         acomp_pessoa_hanseniase: { titulo: "Hanseníase", cat: "Condições Crônicas", color: "red" },
         acomp_pessoa_tuberculose: { titulo: "Tuberculose", cat: "Condições Crônicas", color: "red" },
         acomp_sintomaticos_respirat: { titulo: "Sintomático Respiratório", cat: "Condições Crônicas", color: "red" },
 
-        // Vulnerabilidades (Laranja)
         acomp_tabagista: { titulo: "Tabagistas", cat: "Vulnerabilidades", color: "orange" },
         acomp_usuario_alcool: { titulo: "Uso de Álcool", cat: "Vulnerabilidades", color: "orange" },
         acomp_usuario_outras_drogra: { titulo: "Uso de Drogas", cat: "Vulnerabilidades", color: "orange" },
@@ -191,7 +163,6 @@
         acomp_condi_vulnerab_social: { titulo: "Vulnerabilidade Social", cat: "Vulnerabilidades", color: "orange" },
         acomp_condi_bolsa_familia: { titulo: "Bolsa Família", cat: "Vulnerabilidades", color: "orange" },
 
-        // Ações de Campo (Azul)
         mot_vis_acompanhamento: { titulo: "Acompanhamento no Lar", cat: "Ações de Campo", color: "blue" },
         mot_vis_visita_periodica: { titulo: "Visita Periódica/Rotina", cat: "Ações de Campo", color: "blue" },
         mot_vis_orintacao_prevncao: { titulo: "Orientação/Prevenção", cat: "Ações de Campo", color: "blue" },
@@ -202,7 +173,6 @@
         mot_vis_outros: { titulo: "Outros Motivos", cat: "Ações de Campo", color: "blue" },
         visita_compartilhada: { titulo: "Visita Compartilhada", cat: "Ações de Campo", color: "blue" },
 
-        // Buscas Ativas Focadas (Azul Escuro)
         busca_ativa_consulta: { titulo: "Busca p/ Consulta", cat: "Busca Ativa Direcionada", color: "indigo" },
         busca_ativa_exame: { titulo: "Busca p/ Exame", cat: "Busca Ativa Direcionada", color: "indigo" },
         busca_ativa_vacina: { titulo: "Busca p/ Vacina", cat: "Busca Ativa Direcionada", color: "indigo" },
@@ -214,20 +184,18 @@
         const mesInicio = document.getElementById('select-mes-inicio').value;
         const mesFim = document.getElementById('select-mes-fim').value;
 
-        document.getElementById('lbl-periodo-extenso').textContent = `${mesesNomes[mesInicio]} a ${mesesNomes[mesFim]} de ${ano}`;
+        document.getElementById('lbl-periodo-extenso').textContent = `Mês ${mesInicio}/${ano} a ${mesFim}/${ano}`;
         document.getElementById('loading').style.display = 'block';
         document.getElementById('conteudo-relatorio').style.display = 'none';
 
         try {
-            const url = `/api/relatorios/profissionais/${idProfissional}/visitas?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}`;
-            const resp = await fetch(url);
-            if (!resp.ok) throw new Error("Erro na requisição.");
+            const resp = await fetch(`/api/relatorios/profissionais/${idProfissional}/visitas?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}`);
             const dados = await resp.json();
 
             document.getElementById('loading').style.display = 'none';
             document.getElementById('conteudo-relatorio').style.display = 'block';
 
-            // 1. Desfechos
+            // 1. KPIs
             const totalVisitas = dados.resumo.total_visitas_registradas;
             document.getElementById('ind-total').textContent = totalVisitas;
 
@@ -242,15 +210,10 @@
 
                 if (item.desfecho.toLowerCase().includes("realizada")) {
                     visitasRealizadas += item.total;
-                    backgroundColors.push('#10b981'); // Emerald
-                } else if (item.desfecho.toLowerCase().includes("ausente")) {
-                    visitasPerdidas += item.total;
-                    backgroundColors.push('#f97316'); // Orange
-                } else if (item.desfecho.toLowerCase().includes("recusada")) {
-                    visitasPerdidas += item.total;
-                    backgroundColors.push('#ef4444'); // Red
+                    backgroundColors.push('#10b981'); 
                 } else {
-                    backgroundColors.push('#94a3b8');
+                    visitasPerdidas += item.total;
+                    backgroundColors.push(item.desfecho.toLowerCase().includes("ausente") ? '#f97316' : '#ef4444'); 
                 }
 
                 const pct = totalVisitas > 0 ? ((item.total / totalVisitas) * 100).toFixed(1) : 0;
@@ -270,10 +233,10 @@
             chartDesfechos = new Chart(document.getElementById('graficoDesfechos').getContext('2d'), {
                 type: 'doughnut',
                 data: { labels: labelsDesfechos, datasets: [{ data: dadosDesfechos, backgroundColor: backgroundColors, borderWidth: 1 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } } }, animation: { duration: 0 } }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } } } }
             });
 
-            // 2. Agrupamento em Cards Categorizados
+            // 2. Mapeamento com Porcentagem
             const containerMotivos = document.getElementById('grid-acompanhamentos');
             containerMotivos.innerHTML = '';
 
@@ -289,17 +252,24 @@
             Object.entries(categorias).forEach(([nomeCat, dataCat]) => {
                 let linhasItens = '';
                 dataCat.itens.sort((a, b) => b.total - a.total).forEach(i => {
+                    
+                    // Cálculo da Percentagem Relativa ao Esforço de Campo
+                    const pctVisitas = totalVisitas > 0 ? ((i.total / totalVisitas) * 100).toFixed(1) : "0.0";
+                    
                     linhasItens += `
-                        <div class="flex justify-between items-center py-1.5 border-b border-gray-100 last:border-0">
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
                             <span class="text-xs text-gray-700">${i.nome}</span>
-                            <span class="text-xs font-bold text-${dataCat.color}-800 bg-${dataCat.color}-100 px-1.5 py-0.5 rounded">${i.total}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[9px] font-bold text-gray-400 bg-gray-50 border border-gray-100 px-1 rounded">${pctVisitas}%</span>
+                                <span class="text-xs font-black text-${dataCat.color}-800 bg-${dataCat.color}-100 px-1.5 py-0.5 rounded shadow-sm">${i.total}</span>
+                            </div>
                         </div>
                     `;
                 });
 
                 containerMotivos.innerHTML += `
-                    <div class="bg-white border-t-4 border-${dataCat.color}-500 rounded shadow-sm border-l border-r border-b border-gray-200 p-3 avoid-break">
-                        <h4 class="text-[10px] font-black text-${dataCat.color}-800 uppercase tracking-widest mb-2">${nomeCat}</h4>
+                    <div class="bg-white border-t-4 border-${dataCat.color}-500 rounded shadow-sm border p-3 avoid-break hover:shadow-md transition-shadow">
+                        <h4 class="text-[10px] font-black text-${dataCat.color}-800 uppercase tracking-widest mb-3">${nomeCat}</h4>
                         <div class="flex flex-col">${linhasItens}</div>
                     </div>
                 `;
@@ -311,11 +281,7 @@
         }
     }
 
-    document.getElementById('form-filtros').addEventListener('submit', (e) => {
-        e.preventDefault();
-        carregarRelatorio();
-    });
-
+    document.getElementById('form-filtros').addEventListener('submit', (e) => { e.preventDefault(); carregarRelatorio(); });
     document.addEventListener('DOMContentLoaded', carregarRelatorio);
 </script>
 </body>

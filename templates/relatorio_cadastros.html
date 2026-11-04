@@ -28,44 +28,25 @@
             <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Início</label>
                 <select id="select-mes-inicio" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
-                    <option value="1">Janeiro (01)</option>
-                    <option value="2">Fevereiro (02)</option>
-                    <option value="3">Março (03)</option>
-                    <option value="4">Abril (04)</option>
-                    <option value="5">Maio (05)</option>
-                    <option value="6">Junho (06)</option>
-                    <option value="7">Julho (07)</option>
-                    <option value="8">Agosto (08)</option>
-                    <option value="9">Setembro (09)</option>
-                    <option value="10">Outubro (10)</option>
-                    <option value="11">Novembro (11)</option>
-                    <option value="12">Dezembro (12)</option>
+                    <option value="1">Jan (01)</option><option value="2">Fev (02)</option><option value="3">Mar (03)</option>
+                    <option value="4">Abr (04)</option><option value="5">Mai (05)</option><option value="6">Jun (06)</option>
+                    <option value="7">Jul (07)</option><option value="8">Ago (08)</option><option value="9">Set (09)</option>
+                    <option value="10">Out (10)</option><option value="11">Nov (11)</option><option value="12">Dez (12)</option>
                 </select>
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Fim</label>
                 <select id="select-mes-fim" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
-                    <option value="1">Janeiro (01)</option>
-                    <option value="2">Fevereiro (02)</option>
-                    <option value="3">Março (03)</option>
-                    <option value="4">Abril (04)</option>
-                    <option value="5">Maio (05)</option>
-                    <option value="6">Junho (06)</option>
-                    <option value="7">Julho (07)</option>
-                    <option value="8">Agosto (08)</option>
-                    <option value="9">Setembro (09)</option>
-                    <option value="10">Outubro (10)</option>
-                    <option value="11">Novembro (11)</option>
-                    <option value="12">Dezembro (12)</option>
+                    <option value="1">Jan (01)</option><option value="2">Fev (02)</option><option value="3">Mar (03)</option>
+                    <option value="4">Abr (04)</option><option value="5">Mai (05)</option><option value="6">Jun (06)</option>
+                    <option value="7">Jul (07)</option><option value="8">Ago (08)</option><option value="9">Set (09)</option>
+                    <option value="10">Out (10)</option><option value="11">Nov (11)</option><option value="12">Dez (12)</option>
                 </select>
             </div>
             <div class="flex gap-2">
-                <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors">
-                    Atualizar
+                <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors shadow">
+                    Atualizar Indicadores
                 </button>
-                <a href="/busca" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1.5 px-3 rounded text-sm text-center">
-                    Voltar
-                </a>
             </div>
         </form>
     </div>
@@ -80,11 +61,12 @@
                 <h1 class="text-2xl font-black text-gray-900 mt-1 uppercase tracking-tight">Diagnóstico do Território</h1>
                 <p class="text-sm text-gray-600 mt-1">
                     Profissional: <strong class="text-gray-900">{{ nome_profissional }}</strong> | 
-                    Período: <span id="lbl-periodo" class="font-medium">Carregando...</span>
+                    Período: <span id="lbl-periodo" class="font-medium text-gray-900">...</span>
                 </p>
             </div>
-            <button onclick="window.print()" class="no-print bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded text-sm inline-flex items-center shadow transition-colors">
-                Imprimir / PDF
+            <button onclick="window.print()" class="no-print bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded text-sm inline-flex items-center shadow transition-colors gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Imprimir PDF
             </button>
         </div>
 
@@ -138,7 +120,7 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 print:grid-cols-5 gap-3" id="grid-vulnerabilidades"></div>
             </section>
 
-            <!-- 4. Condições de Moradia, Infraestrutura e Peridomicílio -->
+            <!-- 4. Condições de Moradia e Zoonótica -->
             <section class="avoid-break">
                 <div class="flex items-center gap-2 border-b border-gray-300 pb-1 mb-3">
                     <h3 class="text-sm font-black text-gray-800 uppercase tracking-wide">
@@ -154,11 +136,9 @@
     <script>
         const idProfissional = {{ id_profissional }};
 
-        // Inicializa os seletores imediatamente
         document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
         document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";
 
-        // Cofre de segurança (SVGs inline que não dependem de internet)
         const svgsDeSeguranca = {
             coracao: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>`,
             gota: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2.252A8.014 8.014 0 0117.723 9c0 3.866-5.723 12.748-5.723 12.748S6.277 12.866 6.277 9A8.014 8.014 0 0112 2.252z"></path></svg>`,
@@ -173,12 +153,9 @@
             lupa: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"></path></svg>`
         };
 
-        // Função inteligente de Fallback
         window.svgsDeSeguranca = svgsDeSeguranca;
         function obterIconeSeguro(chaveSvg, urlExterna) {
-            return `<img src="${urlExterna}" class="w-6 h-6 object-contain drop-shadow-sm" 
-                         alt="${chaveSvg}" 
-                         onerror="this.outerHTML = window.svgsDeSeguranca['${chaveSvg}']">`;
+            return `<img src="${urlExterna}" class="w-6 h-6 object-contain drop-shadow-sm" alt="${chaveSvg}" onerror="this.outerHTML = window.svgsDeSeguranca['${chaveSvg}']">`;
         }
 
         const icons = {
@@ -195,7 +172,6 @@
             lupa: obterIconeSeguro('lupa', 'https://cdn-icons-png.flaticon.com/512/3858/3858064.png')
         };
 
-        // Dicionário Estático de Temas para evitar o Purge do Tailwind
         const temas = {
             red: { bg: "bg-red-50", border: "border-red-200", iconBg: "bg-red-100", iconText: "text-red-700", pctBg: "bg-red-200", pctText: "text-red-900" },
             orange: { bg: "bg-orange-50", border: "border-orange-200", iconBg: "bg-orange-100", iconText: "text-orange-700", pctBg: "bg-orange-200", pctText: "text-orange-900" },
@@ -210,14 +186,15 @@
             const t = temas[corKey] || temas.blue;
             let pctHtml = '';
             
+            // O cálculo da percentagem relativa foi ativado para todos que enviarem valTotalRef
             if (valTotalRef > 0) {
                 const pct = ((valor / valTotalRef) * 100).toFixed(1);
                 pctHtml = `<span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded ${t.pctBg} ${t.pctText}">${pct}%</span>`;
             }
 
             return `
-                <div class="flex flex-col p-2.5 rounded-lg ${t.bg} border ${t.border} shadow-sm">
-                    <div class="flex items-center justify-between mb-1.5">
+                <div class="flex flex-col p-3 rounded-lg ${t.bg} border ${t.border} shadow-sm avoid-break">
+                    <div class="flex items-center justify-between mb-2">
                         <div class="${t.iconBg} p-1 rounded border ${t.border} ${t.iconText}">
                             ${iconSvg}
                         </div>
@@ -225,7 +202,7 @@
                     </div>
                     <div>
                         <div class="text-[9px] font-bold text-gray-600 uppercase tracking-tight leading-tight line-clamp-2 h-[26px]">${label}</div>
-                        <div class="text-xl font-black text-gray-900 mt-0.5">${valor}</div>
+                        <div class="text-2xl font-black text-gray-900 mt-1">${valor}</div>
                     </div>
                 </div>
             `;
@@ -236,14 +213,13 @@
             const mesInicio = document.getElementById('select-mes-inicio').value;
             const mesFim = document.getElementById('select-mes-fim').value;
 
-            document.getElementById('lbl-periodo').textContent = `Competência ${mesInicio}/${ano} a ${mesFim}/${ano}`;
+            document.getElementById('lbl-periodo').textContent = `Mês ${mesInicio}/${ano} a ${mesFim}/${ano}`;
             document.getElementById('loading').style.display = 'block';
             document.getElementById('conteudo-relatorio').style.display = 'none';
 
             try {
                 const url = `/api/relatorios/profissionais/${idProfissional}/cadastros-territorio?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}`;
                 const resp = await fetch(url);
-                if (!resp.ok) throw new Error("Erro na requisição.");
                 const d = await resp.json();
 
                 document.getElementById('loading').style.display = 'none';
@@ -260,43 +236,40 @@
                 const densidade = totalDom > 0 ? (d.total_moradores_declarados / totalDom).toFixed(1) : "0.0";
                 document.getElementById('kpi-densidade').textContent = densidade;
 
-                // Bloco 1: Condições Crônicas (Vermelho)
-                const gridCronicos = document.getElementById('grid-cronicos');
-                gridCronicos.innerHTML = `
+                // Bloco 1: Condições Crônicas (Referência = totalCad)
+                document.getElementById('grid-cronicos').innerHTML = `
                     ${criarCard("Hipertensão Arterial", d.cad_hipertensos, icons.coracao, "red", totalCad)}
                     ${criarCard("Diabetes Mellitus", d.cad_diabeticos, icons.gota, "red", totalCad)}
-                    ${criarCard("Gestantes Adscritas", d.cad_gestantes, icons.gestante, "pink")}
-                    ${criarCard("Internação (Últ. 12m)", d.cad_internacao_recente, icons.alerta, "red")}
-                    ${criarCard("Histórico de AVC", d.cad_avc, icons.alerta, "red", 0, true)}
-                    ${criarCard("Histórico de Infarto", d.cad_infarto, icons.alerta, "red", 0, true)}
-                    ${criarCard("Doença Renal Crônica", d.cad_rins, icons.gota, "red", 0, true)}
-                    ${criarCard("Tb / Hanseníase", (d.cad_tuberculose + d.cad_hanseniase), icons.alerta, "red", 0, true)}
-                    ${criarCard("Paciente com Câncer", d.cad_cancer, icons.alerta, "red", 0, true)}
+                    ${criarCard("Gestantes Adscritas", d.cad_gestantes, icons.gestante, "pink", totalCad)}
+                    ${criarCard("Internação (Últ. 12m)", d.cad_internacao_recente, icons.alerta, "red", totalCad)}
+                    ${criarCard("Histórico de AVC", d.cad_avc, icons.alerta, "red", totalCad, true)}
+                    ${criarCard("Histórico de Infarto", d.cad_infarto, icons.alerta, "red", totalCad, true)}
+                    ${criarCard("Doença Renal Crônica", d.cad_rins, icons.gota, "red", totalCad, true)}
+                    ${criarCard("Tb / Hanseníase", (d.cad_tuberculose + d.cad_hanseniase), icons.alerta, "red", totalCad, true)}
+                    ${criarCard("Paciente com Câncer", d.cad_cancer, icons.alerta, "red", totalCad, true)}
                 `;
 
-                // Bloco 2: Vulnerabilidade e Saúde Mental (Laranja)
-                const gridVuln = document.getElementById('grid-vulnerabilidades');
-                gridVuln.innerHTML = `
+                // Bloco 2: Vulnerabilidade (Referência = totalCad)
+                document.getElementById('grid-vulnerabilidades').innerHTML = `
                     ${criarCard("Saúde Mental (Geral)", d.cad_tratamento_psiquiatrico, icons.cerebro, "orange", totalCad)}
                     ${criarCard("Total com Deficiência", d.cad_deficiencia_total, icons.acessivel, "orange", totalCad)}
-                    ${criarCard("Espectro Autista (TEA)", d.cad_tea_autismo, icons.cerebro, "orange", 0, true)}
-                    ${criarCard("Tabagismo Ativo", d.cad_fumantes, icons.cigarro, "orange")}
-                    ${criarCard("Consumo de Álcool", d.cad_alcool, icons.alerta, "orange")}
-                    ${criarCard("Paciente Acamado", d.cad_acamados, icons.casa, "orange", 0, true)}
-                    ${criarCard("Paciente Domiciliado", d.cad_domiciliados, icons.casa, "orange", 0, true)}
-                    ${criarCard("Sem Documento (CPF)", d.cad_sem_cpf, icons.lupa, "orange", 0, true)}
+                    ${criarCard("Espectro Autista (TEA)", d.cad_tea_autismo, icons.cerebro, "orange", totalCad, true)}
+                    ${criarCard("Tabagismo Ativo", d.cad_fumantes, icons.cigarro, "orange", totalCad)}
+                    ${criarCard("Consumo de Álcool", d.cad_alcool, icons.alerta, "orange", totalCad)}
+                    ${criarCard("Paciente Acamado", d.cad_acamados, icons.casa, "orange", totalCad, true)}
+                    ${criarCard("Paciente Domiciliado", d.cad_domiciliados, icons.casa, "orange", totalCad, true)}
+                    ${criarCard("Sem Documento (CPF)", d.cad_sem_cpf, icons.lupa, "orange", totalCad, true)}
                 `;
 
-                // Bloco 3: Habitação e Peridomicílio (Azul / Teal)
-                const gridDom = document.getElementById('grid-domiciliar');
-                gridDom.innerHTML = `
+                // Bloco 3: Habitação (Referência = totalDom)
+                document.getElementById('grid-domiciliar').innerHTML = `
                     ${criarCard("Energia Elétrica", d.com_energia_eletrica, icons.raio, "blue", totalDom)}
                     ${criarCard("Cômodos / Domicílio", d.media_comodos, icons.casa, "blue")}
                     ${criarCard("Famílias c/ Animais", d.domicilios_com_animais, icons.pata, "teal", totalDom)}
-                    ${criarCard("Presença de Cães", d.com_cachorro, icons.pata, "teal", 0, true)}
-                    ${criarCard("Presença de Gatos", d.com_gato, icons.pata, "teal", 0, true)}
-                    ${criarCard("Criação de Aves", d.com_galinha, icons.pata, "teal", 0, true)}
-                    ${criarCard("Possui Plano Privado", d.cad_plano_saude, icons.casa, "blue")}
+                    ${criarCard("Presença de Cães", d.com_cachorro, icons.pata, "teal", totalDom, true)}
+                    ${criarCard("Presença de Gatos", d.com_gato, icons.pata, "teal", totalDom, true)}
+                    ${criarCard("Criação de Aves", d.com_galinha, icons.pata, "teal", totalDom, true)}
+                    ${criarCard("Possui Plano Privado", d.cad_plano_saude, icons.casa, "blue", totalDom)}
                 `;
 
             } catch (err) {
@@ -304,12 +277,7 @@
                 document.getElementById('loading').innerHTML = '<p class="text-red-600 font-bold">Erro ao carregar dados territoriais.</p>';
             }
         }
-
-        document.getElementById('form-filtros').addEventListener('submit', (e) => {
-            e.preventDefault();
-            carregarCadastros();
-        });
-
+        document.getElementById('form-filtros').addEventListener('submit', (e) => { e.preventDefault(); carregarCadastros(); });
         document.addEventListener('DOMContentLoaded', carregarCadastros);
     </script>
 </body>
