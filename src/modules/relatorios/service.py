@@ -1,4 +1,3 @@
-import asyncio
 import calendar
 from typing import Any
 
@@ -845,11 +844,17 @@ class RelatoriosService:
         Orquestra as 3 queries vitais em paralelo e cruza os dados com base em métricas
         do Ministério da Saúde, Previne Brasil e MP, gerando alertas (Verde, Amarelo, Vermelho).
         """
-        
+
         # Execução sequencial (a AsyncSession do SQLAlchemy não permite concorrência na mesma transação)
-        cadastros = await self.gerar_relatorio_cadastros(session, id_profissional, ano, mes_inicio, mes_fim)
-        visitas = await self.gerar_relatorio_visitas(session, id_profissional, ano, mes_inicio, mes_fim)
-        matriz = await self.gerar_matriz_producao(session, id_profissional, ano, mes_inicio, mes_fim)
+        cadastros = await self.gerar_relatorio_cadastros(
+            session, id_profissional, ano, mes_inicio, mes_fim
+        )
+        visitas = await self.gerar_relatorio_visitas(
+            session, id_profissional, ano, mes_inicio, mes_fim
+        )
+        matriz = await self.gerar_matriz_producao(
+            session, id_profissional, ano, mes_inicio, mes_fim
+        )
 
         # 1. Extração Segura de Variáveis (com default 0)
         # 1.1 Do Cadastro
