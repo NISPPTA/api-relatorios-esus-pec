@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matriz Consolidada de Série Histórica</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @page {
+            size: landscape;
+            margin: 10mm;
+        }
+        @media print {
+            body { background-color: white !important; padding: 0 !important; }
+            .no-print { display: none !important; }
+            .print-shadow-none { box-shadow: none !important; border: none !important; padding: 0 !important; }
+            table { width: 100% !important; table-layout: fixed; }
+            th, td { font-size: 10px !important; padding: 4px 2px !important; word-break: break-word; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6 font-sans text-gray-800">
+
+    <div class="max-w-6xl mx-auto bg-white p-4 rounded-lg shadow mb-6 border border-gray-200 no-print">
+        <form id="form-filtros" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Ano</label>
+                <input type="number" id="input-ano" value="{{ filtro_ano }}" min="2020" max="2030"
+                       class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Início</label>
+                <select id="select-mes-inicio" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
+                    <option value="1">Janeiro (01)</option>
+                    <option value="2">Fevereiro (02)</option>
+                    <option value="3">Março (03)</option>
+                    <option value="4">Abril (04)</option>
+                    <option value="5">Maio (05)</option>
+                    <option value="6">Junho (06)</option>
+                    <option value="7">Julho (07)</option>
+                    <option value="8">Agosto (08)</option>
+                    <option value="9">Setembro (09)</option>
+                    <option value="10">Outubro (10)</option>
+                    <option value="11">Novembro (11)</option>
+                    <option value="12">Dezembro (12)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Fim</label>
+                <select id="select-mes-fim" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
+                    <option value="1">Janeiro (01)</option>
+                    <option value="2">Fevereiro (02)</option>
+                    <option value="3">Março (03)</option>
+                    <option value="4">Abril (04)</option>
+                    <option value="5">Maio (05)</option>
+                    <option value="6">Junho (06)</option>
+                    <option value="7">Julho (07)</option>
+                    <option value="8">Agosto (08)</option>
+                    <option value="9">Setembro (09)</option>
+                    <option value="10">Outubro (10)</option>
+                    <option value="11">Novembro (11)</option>
+                    <option value="12">Dezembro (12)</option>
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors">
+                    Atualizar
+                </button>
+                <a href="/busca" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1.5 px-3 rounded text-sm text-center">
+                    Voltar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="max-w-6xl mx-auto bg-white p-10 rounded-lg shadow-md print-shadow-none border border-gray-200">
+        <div class="flex justify-between items-start border-b-2 border-indigo-700 pb-4 mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-indigo-900 uppercase tracking-wide">Matriz de Produção</h1>
+                <h2 class="text-xl text-gray-600 mt-1">Série Histórica e-SUS PEC (Pivoteada)</h2>
+                <p class="text-sm text-gray-500 mt-2">
+                    Profissional: <strong>{{ nome_profissional }}</strong>
+                </p>
+            </div>
+            <button onclick="window.print()" class="no-print bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded inline-flex items-center shadow transition-colors">
+                Imprimir / PDF
+            </button>
+        </div>
+
+        <div id="loading" class="text-center py-10">
+            <p class="text-indigo-600 font-bold text-lg animate-pulse">Carregando matriz consolidada...</p>
+        </div>
+
+        <div id="conteudo-tabela" style="display: none;" class="overflow-x-auto">
+            <table class="w-full text-xs text-left text-gray-700 border border-gray-300">
+                <thead id="thead-matriz" class="bg-indigo-50 text-indigo-900 uppercase font-bold border-b border-gray-300"></thead>
+                <tbody id="tbody-matriz" class="divide-y divide-gray-200"></tbody>
+                <tfoot id="tfoot-matriz" class="bg-gray-100 font-bold border-t-2 border-gray-400"></tfoot>
+            </table>
+        </div>
+    </div>
+    <script>
+        const idProfissional = {{ id_profissional }};
+
+        // 1. Inicializa os seletores imediatamente com os parâmetros da URL/Jinja2
+        document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
+        document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";
+
+        async function carregarMatriz() {
+            const ano = document.getElementById('input-ano').value;
+            const mesInicio = document.getElementById('select-mes-inicio').value;
+            const mesFim = document.getElementById('select-mes-fim').value;
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('conteudo-tabela').style.display = 'none';
+
+            try {
+                const resp = await fetch(`/api/relatorios/profissionais/${idProfissional}/matriz-producao?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}`);
+                const dados = await resp.json();
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('conteudo-tabela').style.display = 'block';
+
+                // Cabeçalho dinâmico
+                const thead = document.getElementById('thead-matriz');
+                let headerHtml = '<tr><th class="p-3">Categoria e-SUS PEC</th>';
+                dados.colunas.forEach(col => {
+                    headerHtml += `<th class="p-3 text-right uppercase">${col}</th>`;
+                });
+                headerHtml += '</tr>';
+                thead.innerHTML = headerHtml;
+
+                // Linhas
+                const tbody = document.getElementById('tbody-matriz');
+                tbody.innerHTML = '';
+                dados.matriz.forEach(linha => {
+                    let tr = `<tr class="hover:bg-gray-50"><td class="p-3 font-medium text-gray-900 border-r">${linha.categoria}</td>`;
+                    dados.colunas.forEach(col => {
+                        const val = linha[col] || 0;
+                        tr += `<td class="p-3 text-right ${col === 'total' ? 'font-bold bg-gray-50 border-l' : ''}">${val}</td>`;
+                    });
+                    tr += '</tr>';
+                    tbody.innerHTML += tr;
+                });
+
+                // Rodapé com Totais Gerais
+                const tfoot = document.getElementById('tfoot-matriz');
+                let footerHtml = `<tr><td class="p-3 text-gray-900 uppercase border-r">${dados.resumo.categoria}</td>`;
+                dados.colunas.forEach(col => {
+                    footerHtml += `<td class="p-3 text-right ${col === 'total' ? 'font-bold text-indigo-900 border-l' : ''}">${dados.resumo[col]}</td>`;
+                });
+                footerHtml += '</tr>';
+                tfoot.innerHTML = footerHtml;
+
+            } catch (err) {
+                document.getElementById('loading').innerHTML = '<p class="text-red-600 font-bold">Erro ao carregar matriz consolidada.</p>';
+            }
+        }
+
+        document.getElementById('form-filtros').addEventListener('submit', (e) => {
+            e.preventDefault();
+            carregarMatriz();
+        });
+
+        document.addEventListener('DOMContentLoaded', carregarMatriz);
+    </script>
+</body>
+</html>
