@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultas e Tratamentos Odontológicos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @page { size: portrait; margin: 10mm; }
+        @media print {
+            body { background-color: white !important; padding: 0 !important; }
+            .no-print { display: none !important; }
+            .print-shadow-none { box-shadow: none !important; border: none !important; padding: 0 !important; }
+            .avoid-break { page-break-inside: avoid; }
+        }
+        .watermark {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-35deg);
+            font-size: 5rem; font-weight: 900; color: rgba(15, 23, 42, 0.04);
+            white-space: nowrap; pointer-events: none; z-index: -1; text-align: center; line-height: 1.2;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 p-6 font-sans text-slate-800 relative z-0">
+
+    <div class="watermark">
+        FONTE OFICIAL: E-SUS PEC<br>
+        <span style="font-size: 3rem;">SAÚDE BUCAL</span>
+    </div>
+
+    <!-- Barra de Filtros -->
+    <div class="max-w-6xl mx-auto bg-white p-4 rounded-lg shadow mb-6 border border-slate-200 no-print">
+        <form id="form-filtros" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Ano</label>
+                <input type="number" id="input-ano" value="{{ filtro_ano }}" min="2020" max="2030" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Mês Início</label>
+                <select id="select-mes-inicio" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm">
+                    <option value="1">Jan (01)</option><option value="2">Fev (02)</option><option value="3">Mar (03)</option>
+                    <option value="4">Abr (04)</option><option value="5">Mai (05)</option><option value="6">Jun (06)</option>
+                    <option value="7">Jul (07)</option><option value="8">Ago (08)</option><option value="9">Set (09)</option>
+                    <option value="10">Out (10)</option><option value="11">Nov (11)</option><option value="12">Dez (12)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Mês Fim</label>
+                <select id="select-mes-fim" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm">
+                    <option value="1">Jan (01)</option><option value="2">Fev (02)</option><option value="3">Mar (03)</option>
+                    <option value="4">Abr (04)</option><option value="5">Mai (05)</option><option value="6">Jun (06)</option>
+                    <option value="7">Jul (07)</option><option value="8">Ago (08)</option><option value="9">Set (09)</option>
+                    <option value="10">Out (10)</option><option value="11">Nov (11)</option><option value="12">Dez (12)</option>
+                </select>
+            </div>
+            <div>
+                <button type="submit" class="w-full bg-cyan-700 hover:bg-cyan-800 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors shadow">
+                    Atualizar Relatório
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Relatório -->
+    <div class="max-w-6xl mx-auto bg-white p-10 rounded-lg shadow-lg print-shadow-none border border-slate-200">
+        
+        <div class="flex justify-between items-start border-b-2 border-cyan-800 pb-4 mb-6">
+            <div>
+                <span class="text-xs font-extrabold tracking-widest text-cyan-800 uppercase">Sistema Único de Saúde - Atenção Primária</span>
+                <h1 class="text-2xl font-black text-slate-900 mt-1 uppercase tracking-tight">Consultas e Tratamentos Odontológicos</h1>
+                <p class="text-sm text-slate-600 mt-1">
+                    Profissional: <strong class="text-slate-900">{{ nome_profissional }}</strong> | 
+                    Período: <span id="lbl-periodo" class="font-medium text-slate-900">...</span>
+                </p>
+            </div>
+            <button onclick="window.print()" class="no-print bg-cyan-700 hover:bg-cyan-800 text-white font-bold py-2 px-4 rounded text-sm inline-flex items-center shadow gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Imprimir PDF
+            </button>
+        </div>
+
+        <div id="loading" class="text-center py-10"><p class="text-cyan-700 font-bold animate-pulse">Carregando métricas odontológicas...</p></div>
+
+        <div id="conteudo-relatorio" style="display: none;">
+            
+            <!-- KPIs Globais -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 avoid-break">
+                <div class="p-4 bg-slate-50 border-l-4 border-slate-500 rounded shadow-sm">
+                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Atendimentos</span>
+                    <p id="kpi-total" class="text-3xl font-black text-slate-800 mt-1">0</p>
+                </div>
+                <div class="p-4 bg-emerald-50 border-l-4 border-emerald-500 rounded shadow-sm relative">
+                    <span class="text-[10px] font-black text-emerald-800 uppercase tracking-widest">Tratamentos Concluídos</span>
+                    <p id="kpi-concluidos" class="text-3xl font-black text-emerald-900 mt-1">0</p>
+                    <span class="absolute top-4 right-4 text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded" id="pct-concluidos">0%</span>
+                </div>
+                <div class="p-4 bg-fuchsia-50 border-l-4 border-fuchsia-500 rounded shadow-sm">
+                    <span class="text-[10px] font-black text-fuchsia-800 uppercase tracking-widest">Gestantes (Pré-Natal)</span>
+                    <p id="kpi-gestantes" class="text-3xl font-black text-fuchsia-900 mt-1">0</p>
+                </div>
+                <div class="p-4 bg-amber-50 border-l-4 border-amber-500 rounded shadow-sm">
+                    <span class="text-[10px] font-black text-amber-800 uppercase tracking-widest">Retornos Agendados</span>
+                    <p id="kpi-retornos" class="text-3xl font-black text-amber-900 mt-1">0</p>
+                </div>
+            </div>
+
+            <!-- Grade Dinâmica -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Coluna 1: Vigilância Bucal -->
+                <div class="bg-white border border-slate-200 rounded shadow-sm p-4 avoid-break">
+                    <h3 class="text-xs font-bold text-rose-800 uppercase tracking-wide border-b border-rose-100 pb-2 mb-3">Vigilância em Saúde Bucal</h3>
+                    <div id="lista-vigilancia" class="flex flex-col gap-2"></div>
+                </div>
+
+                <!-- Coluna 2: Prevenção e Insumos -->
+                <div class="bg-white border border-slate-200 rounded shadow-sm p-4 avoid-break">
+                    <h3 class="text-xs font-bold text-teal-800 uppercase tracking-wide border-b border-teal-100 pb-2 mb-3">Fornecimento de Insumos</h3>
+                    <div id="lista-insumos" class="flex flex-col gap-2"></div>
+                </div>
+
+                <!-- Coluna 3: Encaminhamentos CEO -->
+                <div class="bg-white border border-slate-200 rounded shadow-sm p-4 avoid-break">
+                    <h3 class="text-xs font-bold text-indigo-800 uppercase tracking-wide border-b border-indigo-100 pb-2 mb-3">Encaminhamentos Especializados</h3>
+                    <div id="lista-encaminhamentos" class="flex flex-col gap-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const idProfissional = {{ id_profissional }};
+        
+        document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
+        document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";
+
+        function criarLinha(label, valor, totalRef, corT) {
+            if(valor === 0) return '';
+            const pct = totalRef > 0 ? ((valor/totalRef)*100).toFixed(1) : "0.0";
+            return `
+                <div class="flex justify-between items-center py-1.5 border-b border-slate-50 last:border-0">
+                    <span class="text-xs text-slate-700 truncate pr-2" title="${label}">${label}</span>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-[9px] font-bold text-slate-400 bg-slate-50 border border-slate-100 py-0.5 rounded w-10 text-center inline-block">${pct}%</span>
+                        <span class="text-xs font-black text-${corT}-800 bg-${corT}-100 py-0.5 rounded shadow-sm w-8 text-center inline-block">${valor}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function carregarDados() {
+            const ano = document.getElementById('input-ano').value;
+            const mesIn = document.getElementById('select-mes-inicio').value;
+            const mesFim = document.getElementById('select-mes-fim').value;
+
+            document.getElementById('lbl-periodo').textContent = `Mês ${mesIn} a ${mesFim} de ${ano}`;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('conteudo-relatorio').style.display = 'none';
+
+            try {
+                const resp = await fetch(`/api/relatorios/profissionais/${idProfissional}/consultas-odonto?ano=${ano}&mes_inicio=${mesIn}&mes_fim=${mesFim}`);
+                const data = await resp.json();
+                const d = data.resumo;
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('conteudo-relatorio').style.display = 'block';
+
+                const total = d.total_atendimentos;
+                document.getElementById('kpi-total').textContent = total;
+                document.getElementById('kpi-concluidos').textContent = d.tratamentos_concluidos;
+                document.getElementById('kpi-gestantes').textContent = d.gestantes_atendidas;
+                document.getElementById('kpi-retornos').textContent = d.retornos_agendados;
+                
+                document.getElementById('pct-concluidos').textContent = total > 0 ? ((d.tratamentos_concluidos/total)*100).toFixed(1) + "%" : "0%";
+
+                // Vigilância
+                document.getElementById('lista-vigilancia').innerHTML = 
+                    criarLinha("Queixa de Dor de Dente", d.queixa_dor_dente, total, "rose") +
+                    criarLinha("Abscesso Dentoalveolar", d.abscesso_dentoalveolar, total, "rose") +
+                    criarLinha("Traumatismo Dental", d.traumatismo_dental, total, "rose") +
+                    criarLinha("Lesão de Tecidos Moles", d.lesao_tecidos_moles, total, "rose") +
+                    criarLinha("Fluorose Dentária", d.fluorose_dentaria, total, "rose");
+
+                // Insumos
+                document.getElementById('lista-insumos').innerHTML = 
+                    criarLinha("Escovas de Dente", d.escovas_entregues, total, "teal") +
+                    criarLinha("Cremes Dentais", d.cremes_entregues, total, "teal") +
+                    criarLinha("Fios Dentais", d.fios_entregues, total, "teal");
+
+                // Encaminhamentos
+                document.getElementById('lista-encaminhamentos').innerHTML = 
+                    criarLinha("Endodontia", d.encam_endodontia, total, "indigo") +
+                    criarLinha("Cirurgia Bucomaxilofacial", d.encam_bucomaxilo, total, "indigo") +
+                    criarLinha("Periodontia", d.encam_periodontia, total, "indigo") +
+                    criarLinha("Prótese Dentária", d.encam_protese, total, "indigo") +
+                    criarLinha("Odontopediatria", d.encam_odontopediatria, total, "indigo") +
+                    criarLinha("Estomatologia", d.encam_estomatologia, total, "indigo");
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('loading').innerHTML = '<p class="text-rose-600 font-bold">Erro ao carregar dados.</p>';
+            }
+        }
+        document.getElementById('form-filtros').addEventListener('submit', (e) => { e.preventDefault(); carregarDados(); });
+        document.addEventListener('DOMContentLoaded', carregarDados);
+    </script>
+</body>
+</html>
