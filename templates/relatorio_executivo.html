@@ -22,7 +22,7 @@
             transform: translate(-50%, -50%) rotate(-35deg);
             font-size: 5rem;
             font-weight: 900;
-            color: rgba(15, 23, 42, 0.04); /* Muito suave e discreta */
+            color: rgba(15, 23, 42, 0.04);
             white-space: nowrap;
             pointer-events: none;
             z-index: -1;
@@ -33,13 +33,13 @@
 </head>
 <body class="bg-slate-50 p-6 font-sans text-slate-800 relative z-0">
 
-    <!-- Marca d'Água (Aparece na tela e na impressão) -->
+    <!-- Marca d'Água -->
     <div class="watermark">
         FONTE OFICIAL: E-SUS PEC<br>
         <span style="font-size: 3rem;">EXTRAÇÃO AUTENTICADA</span>
     </div>
 
-    <!-- Barra de Filtros (Não imprimível) -->
+    <!-- Barra de Filtros -->
     <div class="max-w-5xl mx-auto bg-white p-4 rounded-lg shadow mb-6 border border-slate-200 no-print">
         <form id="form-filtros" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
             <div>
@@ -73,7 +73,7 @@
         </form>
     </div>
 
-    <!-- Relatório Executivo Principal -->
+    <!-- Relatório Executivo -->
     <div class="max-w-5xl mx-auto bg-white p-10 rounded-lg shadow-lg print-shadow-none border border-slate-200 bg-opacity-95">
         
         <!-- Cabeçalho -->
@@ -94,7 +94,7 @@
 
         <div id="conteudo-relatorio" style="display: none;">
             
-            <!-- 1. KPIs Globais -->
+            <!-- KPIs -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 avoid-break">
                 <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg shadow-sm">
                     <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">População Adscrita</span>
@@ -116,7 +116,7 @@
                 </div>
             </div>
 
-            <!-- 2. Auditoria e Semáforos -->
+            <!-- Auditoria -->
             <div class="mb-8">
                 <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Auditoria Legal e Diretrizes Oficiais</h3>
                 <div class="flex flex-col gap-4" id="container-auditoria"></div>
@@ -127,11 +127,10 @@
     <script>
         const idProfissional = {{ id_profissional }};
         
-        // Sincronizar selectores com Jinja
         document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
         document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";
 
-        // Definição das Dicas (Tooltips)
+        // Definição das Dicas (Tooltips) - PT-BR e Padrão ABNT
         const dicasLogica = {
             "pnab": {
                 fonte: "Cruzamento: 'Perfil Cadastral' vs 'Boletim de Visitas'",
@@ -139,11 +138,11 @@
             },
             "materno_infantil": {
                 fonte: "Cruzamento: Cadastros (Gestantes) vs Focos (Acomp. Gestante)",
-                criterio: "Compara gestantes no território com visitas realizadas. Vermelho indica alto risco materno-infantil ou sub-registo."
+                criterio: "Compara gestantes no território com visitas realizadas. Sinal vermelho indica alto risco materno-infantil ou sub-registro no prontuário eletrônico."
             },
             "cronicos": {
-                fonte: "Cruzamento: Condições Crónicas (HAS/DM) vs Ações de Campo",
-                criterio: "Avalia se o total de atendimentos a hipertensos/diabéticos cobre a totalidade de doentes sinalizados na base."
+                fonte: "Cruzamento: Condições Crônicas (HAS/DM) vs Ações de Campo",
+                criterio: "Avalia se o total de atendimentos a hipertensos/diabéticos cobre a totalidade de pacientes sinalizados na base."
             },
             "equidade": {
                 fonte: "Cruzamento: Vulnerabilidades (Acamados) vs Busca Ativa",
@@ -164,7 +163,7 @@
             return `
                 <div class="flex flex-col bg-white border-l-4 ${cor.border} rounded-r-lg shadow-sm border p-5 avoid-break relative group">
                     
-                    <!-- Ícone de Interrogação (Hover para Tooltip) - Escondido na Impressão -->
+                    <!-- Ícone de Interrogação (Hover para Tooltip) -->
                     <div class="absolute top-4 right-4 no-print cursor-help">
                         <svg class="w-5 h-5 text-slate-300 hover:text-indigo-500 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         
@@ -216,7 +215,7 @@
                 document.getElementById('container-auditoria').innerHTML = `
                     ${criarCardAuditoria("Cobertura Territorial (PNAB)", "pnab", d.auditoria.pnab)}
                     ${criarCardAuditoria("Proteção Materno-Infantil", "materno_infantil", d.auditoria.materno_infantil)}
-                    ${criarCardAuditoria("Vigilância de Doenças Crónicas", "cronicos", d.auditoria.cronicos)}
+                    ${criarCardAuditoria("Vigilância de Doenças Crônicas", "cronicos", d.auditoria.cronicos)}
                     ${criarCardAuditoria("Equidade e Acessibilidade", "equidade", d.auditoria.equidade)}
                 `;
             } catch (e) {
