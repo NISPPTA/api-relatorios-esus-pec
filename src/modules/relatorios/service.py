@@ -451,18 +451,60 @@ class RelatoriosService:
 
         sql_motivos = """
             SELECT 
-                COALESCE(SUM(f.st_mot_vis_cad_att), 0) AS visitas_cadastro_atualizacao,
-                COALESCE(SUM(f.st_mot_vis_visita_periodica), 0) AS visitas_periodicas,
-                COALESCE(SUM(f.st_mot_vis_busca_ativa), 0) AS busca_ativa,
-                COALESCE(SUM(f.st_acomp_gestante), 0) AS acomp_gestantes,
-                COALESCE(SUM(f.st_acomp_puerpera), 0) AS acomp_puerperas,
-                COALESCE(SUM(f.st_acomp_recem_nascido), 0) AS acomp_recem_nascidos,
-                COALESCE(SUM(f.st_acomp_crianca), 0) AS acomp_criancas,
-                COALESCE(SUM(f.st_acomp_pessoa_hipertensao), 0) AS acomp_hipertensos,
-                COALESCE(SUM(f.st_acomp_pessoa_diabetes), 0) AS acomp_diabeticos,
-                COALESCE(SUM(f.st_acomp_pessoa_idosa), 0) AS acomp_idosos,
-                COALESCE(SUM(f.st_ctrl_amb_vet_imovel_foco), 0) AS endemias_imovel_foco,
-                COALESCE(SUM(f.st_ctrl_amb_vet_tratamnt_focal), 0) AS endemias_tratamento_focal
+                -- Motivos da Visita
+                COALESCE(SUM(f.st_mot_vis_cad_att), 0) AS mot_vis_cad_att,
+                COALESCE(SUM(f.st_mot_vis_visita_periodica), 0) AS mot_vis_visita_periodica,
+                COALESCE(SUM(f.st_mot_vis_busca_ativa), 0) AS mot_vis_busca_ativa,
+                COALESCE(SUM(f.st_mot_vis_acompanhamento), 0) AS mot_vis_acompanhamento,
+                COALESCE(SUM(f.st_mot_vis_convte_atvidd_cltva), 0) AS mot_vis_convte_atvidd_cltva,
+                COALESCE(SUM(f.st_mot_vis_orintacao_prevncao), 0) AS mot_vis_orintacao_prevncao,
+                COALESCE(SUM(f.st_mot_vis_egresso_internacao), 0) AS mot_vis_egresso_internacao,
+                COALESCE(SUM(f.st_mot_vis_ctrl_ambnte_vetor), 0) AS mot_vis_ctrl_ambnte_vetor,
+                COALESCE(SUM(f.st_mot_vis_outros), 0) AS mot_vis_outros,
+
+                -- Buscas Ativas
+                COALESCE(SUM(f.st_busca_ativa_consulta), 0) AS busca_ativa_consulta,
+                COALESCE(SUM(f.st_busca_ativa_exame), 0) AS busca_ativa_exame,
+                COALESCE(SUM(f.st_busca_ativa_vacina), 0) AS busca_ativa_vacina,
+                COALESCE(SUM(f.st_busca_ativa_bolsa_familia), 0) AS busca_ativa_bolsa_familia,
+
+                -- Ciclos de Vida
+                COALESCE(SUM(f.st_acomp_gestante), 0) AS acomp_gestante,
+                COALESCE(SUM(f.st_acomp_puerpera), 0) AS acomp_puerpera,
+                COALESCE(SUM(f.st_acomp_recem_nascido), 0) AS acomp_recem_nascido,
+                COALESCE(SUM(f.st_acomp_crianca), 0) AS acomp_crianca,
+                COALESCE(SUM(f.st_acomp_pessoa_idosa), 0) AS acomp_pessoa_idosa,
+
+                -- Condições Clínicas
+                COALESCE(SUM(f.st_acomp_pessoa_hipertensao), 0) AS acomp_pessoa_hipertensao,
+                COALESCE(SUM(f.st_acomp_pessoa_diabetes), 0) AS acomp_pessoa_diabetes,
+                COALESCE(SUM(f.st_acomp_pessoa_asma), 0) AS acomp_pessoa_asma,
+                COALESCE(SUM(f.st_acomp_pessoa_dpoc_enfisema), 0) AS acomp_pessoa_dpoc_enfisema,
+                COALESCE(SUM(f.st_acomp_pessoa_cancer), 0) AS acomp_pessoa_cancer,
+                COALESCE(SUM(f.st_acomp_pessoa_doenca_cronica), 0) AS acomp_pessoa_doenca_cronica,
+                COALESCE(SUM(f.st_acomp_pessoa_hanseniase), 0) AS acomp_pessoa_hanseniase,
+                COALESCE(SUM(f.st_acomp_pessoa_tuberculose), 0) AS acomp_pessoa_tuberculose,
+                COALESCE(SUM(f.st_acomp_sintomaticos_respirat), 0) AS acomp_sintomaticos_respirat,
+
+                -- Vulnerabilidades e Condição Social
+                COALESCE(SUM(f.st_acomp_tabagista), 0) AS acomp_tabagista,
+                COALESCE(SUM(f.st_acomp_usuario_alcool), 0) AS acomp_usuario_alcool,
+                COALESCE(SUM(f.st_acomp_usuario_outras_drogra), 0) AS acomp_usuario_outras_drogra,
+                COALESCE(SUM(f.st_acomp_saude_mental), 0) AS acomp_saude_mental,
+                COALESCE(SUM(f.st_acomp_pessoa_desnutricao), 0) AS acomp_pessoa_desnutricao,
+                COALESCE(SUM(f.st_acomp_pessoa_reabil_deficie), 0) AS acomp_pessoa_reabil_deficie,
+                COALESCE(SUM(f.st_acomp_domiciliados_acamados), 0) AS acomp_domiciliados_acamados,
+                COALESCE(SUM(f.st_acomp_condi_vulnerab_social), 0) AS acomp_condi_vulnerab_social,
+                COALESCE(SUM(f.st_acomp_condi_bolsa_familia), 0) AS acomp_condi_bolsa_familia,
+
+                -- Ações de Vigilância e Endemias
+                COALESCE(SUM(f.st_ctrl_amb_vet_imovel_foco), 0) AS ctrl_amb_vet_imovel_foco,
+                COALESCE(SUM(f.st_ctrl_amb_vet_tratamnt_focal), 0) AS ctrl_amb_vet_tratamnt_focal,
+                COALESCE(SUM(f.st_ctrl_amb_vet_acao_educativa), 0) AS ctrl_amb_vet_acao_educativa,
+                COALESCE(SUM(f.st_ctrl_amb_vet_acao_mecanica), 0) AS ctrl_amb_vet_acao_mecanica,
+
+                -- Operacional
+                COALESCE(SUM(f.st_visita_compartilhada), 0) AS visita_compartilhada
             FROM tb_fat_visita_domiciliar f
             JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = f.co_dim_tempo
             WHERE f.co_dim_profissional = :id_prof
@@ -485,7 +527,6 @@ class RelatoriosService:
             {"desfecho": r["desfecho"], "total": r["total"]} for r in linhas_desfechos
         ]
         total_visitas = sum(r["total"] for r in dados_desfechos)
-
         motivos = {k: int(v) for k, v in linha_motivo.items()} if linha_motivo else {}
 
         return {
@@ -493,6 +534,104 @@ class RelatoriosService:
             "desfechos": dados_desfechos,
             "motivos_e_acompanhamentos": motivos,
         }
+
+    async def gerar_relatorio_cadastros(
+        self,
+        session: AsyncSession,
+        id_profissional: int,
+        ano: int,
+        mes_inicio: int,
+        mes_fim: int,
+    ) -> dict[str, Any]:
+        sql = """
+            WITH cad_individual AS (
+                SELECT 
+                    COUNT(1) AS total_cadastros_individuais,
+                    COALESCE(SUM(ci.st_recusa_cadastro), 0) AS recusas_individual,
+                    COALESCE(SUM(ci.st_responsavel_familiar), 0) AS responsavel_familiar,
+                    COALESCE(SUM(ci.st_plano_saude_privado), 0) AS cad_plano_saude,
+                    
+                    -- Ciclos de Vida e Condições Crônicas
+                    COALESCE(SUM(ci.st_gestante), 0) AS cad_gestantes,
+                    COALESCE(SUM(ci.st_hipertensao_arterial), 0) AS cad_hipertensos,
+                    COALESCE(SUM(ci.st_diabete), 0) AS cad_diabeticos,
+                    COALESCE(SUM(ci.st_doenca_cardiaca), 0) AS cad_cardiaca,
+                    COALESCE(SUM(ci.st_avc), 0) AS cad_avc,
+                    COALESCE(SUM(ci.st_infarto), 0) AS cad_infarto,
+                    COALESCE(SUM(ci.st_problema_rins), 0) AS cad_rins,
+                    COALESCE(SUM(ci.st_cancer), 0) AS cad_cancer,
+                    COALESCE(SUM(ci.st_doenca_respiratoria), 0) AS cad_respiratoria,
+                    COALESCE(SUM(ci.st_hanseniase), 0) AS cad_hanseniase,
+                    COALESCE(SUM(ci.st_tuberculose), 0) AS cad_tuberculose,
+                    
+                    -- Risco Clínico, Acessibilidade e Hábitos
+                    COALESCE(SUM(ci.st_internacao_12), 0) AS cad_internacao_recente,
+                    COALESCE(SUM(ci.st_acamado), 0) AS cad_acamados,
+                    COALESCE(SUM(ci.st_domiciliado), 0) AS cad_domiciliados,
+                    COALESCE(SUM(ci.st_tratamento_psiquiatra), 0) AS cad_tratamento_psiquiatrico,
+                    COALESCE(SUM(ci.st_fumante), 0) AS cad_fumantes,
+                    COALESCE(SUM(ci.st_alcool), 0) AS cad_alcool,
+                    COALESCE(SUM(ci.st_outra_droga), 0) AS cad_drogas,
+                    COALESCE(SUM(ci.st_usa_planta_medicinal), 0) AS cad_planta_medicinal,
+                    COALESCE(SUM(ci.st_pic), 0) AS cad_praticas_integrativas,
+                    
+                    -- Deficiências Específicas
+                    COALESCE(SUM(ci.st_deficiencia), 0) AS cad_deficiencia_total,
+                    COALESCE(SUM(ci.st_defi_auditiva), 0) AS cad_deficiencia_auditiva,
+                    COALESCE(SUM(ci.st_defi_visual), 0) AS cad_deficiencia_visual,
+                    COALESCE(SUM(ci.st_defi_fisica), 0) AS cad_deficiencia_fisica,
+                    COALESCE(SUM(ci.st_defi_intelectual_cognitiva), 0) AS cad_deficiencia_cognitiva,
+                    COALESCE(SUM(ci.st_defi_tea), 0) AS cad_tea_autismo,
+                    
+                    -- Vulnerabilidade Social e Segurança Alimentar
+                    COALESCE(SUM(ci.st_recebe_beneficio), 0) AS cad_recebe_beneficio_total,
+                    COALESCE(SUM(ci.st_beneficio_bolsa_familia), 0) AS cad_bolsa_familia,
+                    COALESCE(SUM(ci.st_beneficio_aposentado), 0) AS cad_aposentados,
+                    COALESCE(SUM(ci.st_beneficio_prest_continuada), 0) AS cad_bpc,
+                    COALESCE(SUM(ci.st_beneficio_cesta_alimento), 0) AS cad_cesta_alimentos,
+                    COALESCE(SUM(ci.st_morador_rua), 0) AS cad_morador_rua,
+                    COALESCE(SUM(ci.st_alimentos_acab_sem_dinheiro), 0) AS cad_inseguranca_alimentar_1,
+                    COALESCE(SUM(ci.st_comeu_que_tinha_dnheir_acab), 0) AS cad_inseguranca_alimentar_2,
+                    COALESCE(SUM(ci.st_nao_possui_cpf), 0) AS cad_sem_cpf
+                FROM tb_fat_cad_individual ci
+                JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = ci.co_dim_tempo
+                WHERE ci.co_dim_profissional = :id_prof
+                  AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+            ),
+            cad_domiciliar AS (
+                SELECT 
+                    COUNT(1) AS total_domicilios,
+                    COALESCE(SUM(cd.st_recusa_cadastro), 0) AS recusas_domicilio,
+                    COALESCE(SUM(cd.qt_morador), 0) AS total_moradores_declarados,
+                    COALESCE(AVG(cd.nu_comodo), 0)::numeric(10,1) AS media_comodos,
+                    COALESCE(SUM(cd.st_disp_energia), 0) AS com_energia_eletrica,
+                    COALESCE(SUM(cd.st_animal_domiciliar), 0) AS domicilios_com_animais,
+                    COALESCE(SUM(cd.st_animal_cachorro), 0) AS com_cachorro,
+                    COALESCE(SUM(cd.st_animal_gato), 0) AS com_gato,
+                    COALESCE(SUM(cd.st_animal_galinha), 0) AS com_galinha,
+                    COALESCE(SUM(cd.st_animal_porco), 0) AS com_porco,
+                    COALESCE(SUM(cd.st_animal_passaro), 0) AS com_passaro,
+                    COALESCE(SUM(cd.st_animal_outros), 0) AS com_outros_animais
+                FROM tb_fat_cad_domiciliar cd
+                JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = cd.co_dim_tempo
+                WHERE cd.co_dim_profissional = :id_prof
+                  AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+            )
+            SELECT * 
+            FROM cad_individual
+            CROSS JOIN cad_domiciliar;
+        """
+
+        parametros = {
+            "id_prof": id_profissional,
+            "ano": ano,
+            "mes_inicio": mes_inicio,
+            "mes_fim": mes_fim,
+        }
+        res = await session.execute(text(sql), parametros)
+        linha = res.mappings().first()
+
+        return dict(linha) if linha else {}
 
     async def gerar_relatorio_procedimentos(
         self,
