@@ -109,3 +109,15 @@ async def api_relatorio_procedimentos(
         mes_fim=mes_fim,
         dias_desconto=dias_desconto,
     )
+
+@router.get("/profissionais/{id_profissional}/cadastros-territorio")
+async def relatorio_cadastros_territorio(
+    id_profissional: int,
+    ano: int = 2026,
+    mes_inicio: int = 1,
+    mes_fim: int = 12,
+    session: AsyncSession = Depends(get_db_session),
+):
+    return await service.gerar_relatorio_cadastros(
+        session, id_profissional, ano, mes_inicio, mes_fim
+    )
