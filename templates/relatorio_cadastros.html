@@ -11,23 +11,23 @@
             body { background-color: white !important; padding: 0 !important; }
             .no-print { display: none !important; }
             .print-shadow-none { box-shadow: none !important; border: none !important; padding: 0 !important; }
-            .page-break { page-break-before: always; }
+            .avoid-break { page-break-inside: avoid; }
         }
     </style>
 </head>
 <body class="bg-gray-100 p-6 font-sans text-gray-800">
 
     <!-- Barra de Filtros (Não-Imprimível) -->
-    <div class="max-w-5xl mx-auto bg-white p-4 rounded-lg shadow mb-6 border border-gray-200 no-print">
+    <div class="max-w-6xl mx-auto bg-white p-4 rounded-lg shadow mb-6 border border-gray-200 no-print">
         <form id="form-filtros" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
             <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Ano</label>
                 <input type="number" id="input-ano" value="{{ filtro_ano }}" min="2020" max="2030"
-                       class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
+                       class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Início</label>
-                <select id="select-mes-inicio" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
+                <select id="select-mes-inicio" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
                     <option value="1">Janeiro (01)</option>
                     <option value="2">Fevereiro (02)</option>
                     <option value="3">Março (03)</option>
@@ -44,7 +44,7 @@
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Fim</label>
-                <select id="select-mes-fim" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
+                <select id="select-mes-fim" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
                     <option value="1">Janeiro (01)</option>
                     <option value="2">Fevereiro (02)</option>
                     <option value="3">Março (03)</option>
@@ -60,7 +60,7 @@
                 </select>
             </div>
             <div class="flex gap-2">
-                <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors">
+                <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors">
                     Atualizar
                 </button>
                 <a href="/busca" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-1.5 px-3 rounded text-sm text-center">
@@ -71,79 +71,86 @@
     </div>
 
     <!-- Conteúdo do Relatório -->
-    <div class="max-w-5xl mx-auto bg-white p-8 rounded-lg shadow-md print-shadow-none border border-gray-200">
+    <div class="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-md print-shadow-none border border-gray-200">
         
         <!-- Cabeçalho Oficial SUS -->
-        <div class="flex justify-between items-start border-b-2 border-emerald-800 pb-4 mb-6">
+        <div class="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">
             <div>
-                <span class="text-xs font-extrabold tracking-widest text-emerald-800 uppercase">Sistema Único de Saúde - Atenção Primária</span>
-                <h1 class="text-2xl font-bold text-gray-900 mt-1">Perfil Cadastral e Diagnóstico do Território</h1>
+                <span class="text-xs font-extrabold tracking-widest text-blue-800 uppercase">Sistema Único de Saúde - Atenção Primária</span>
+                <h1 class="text-2xl font-black text-gray-900 mt-1 uppercase tracking-tight">Diagnóstico do Território</h1>
                 <p class="text-sm text-gray-600 mt-1">
                     Profissional: <strong class="text-gray-900">{{ nome_profissional }}</strong> | 
                     Período: <span id="lbl-periodo" class="font-medium">Carregando...</span>
                 </p>
             </div>
-            <button onclick="window.print()" class="no-print bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-4 rounded text-sm inline-flex items-center shadow transition-colors">
+            <button onclick="window.print()" class="no-print bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded text-sm inline-flex items-center shadow transition-colors">
                 Imprimir / PDF
             </button>
         </div>
 
-        <div id="loading" class="text-center py-12">
-            <p class="text-emerald-700 font-bold text-base animate-pulse">Consolidando base territorial de cadastros...</p>
+        <div id="loading" class="text-center py-10">
+            <p class="text-blue-700 font-bold text-base animate-pulse">Consolidando base territorial de cadastros...</p>
         </div>
 
         <div id="conteudo-relatorio" style="display: none;">
             
             <!-- 1. KPIs Gerais do Território -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-                    <span class="text-xs font-bold text-emerald-900 uppercase">Cidadãos Cadastrados</span>
-                    <p id="kpi-cidadaos" class="text-3xl font-extrabold text-emerald-900 mt-1">0</p>
-                    <span class="text-[11px] text-emerald-700">Indivíduos adscritos</span>
+            <div class="grid grid-cols-2 md:grid-cols-4 print:grid-cols-4 gap-4 mb-6">
+                <div class="p-3 bg-indigo-50 border-l-4 border-indigo-600 rounded shadow-sm">
+                    <span class="text-[10px] font-black text-indigo-800 uppercase tracking-widest">Cidadãos Cadastrados</span>
+                    <p id="kpi-cidadaos" class="text-2xl font-black text-gray-900 mt-1">0</p>
+                    <span class="text-[10px] text-gray-500 font-medium">Base total adscrita</span>
                 </div>
-                <div class="p-4 bg-teal-50 border border-teal-200 rounded-lg">
-                    <span class="text-xs font-bold text-teal-900 uppercase">Domicílios Registrados</span>
-                    <p id="kpi-domicilios" class="text-3xl font-extrabold text-teal-900 mt-1">0</p>
-                    <span class="text-[11px] text-teal-700">Imóveis residenciais</span>
+                <div class="p-3 bg-teal-50 border-l-4 border-teal-600 rounded shadow-sm">
+                    <span class="text-[10px] font-black text-teal-800 uppercase tracking-widest">Domicílios Registrados</span>
+                    <p id="kpi-domicilios" class="text-2xl font-black text-gray-900 mt-1">0</p>
+                    <span class="text-[10px] text-gray-500 font-medium">Imóveis mapeados</span>
                 </div>
-                <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                    <span class="text-xs font-bold text-slate-800 uppercase">Chefes de Família</span>
-                    <p id="kpi-responsaveis" class="text-3xl font-extrabold text-slate-900 mt-1">0</p>
-                    <span class="text-[11px] text-slate-600">Responsáveis familiares</span>
+                <div class="p-3 bg-blue-50 border-l-4 border-blue-600 rounded shadow-sm">
+                    <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Chefes de Família</span>
+                    <p id="kpi-responsaveis" class="text-2xl font-black text-gray-900 mt-1">0</p>
+                    <span class="text-[10px] text-gray-500 font-medium">Responsáveis designados</span>
                 </div>
-                <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                    <span class="text-xs font-bold text-slate-800 uppercase">Média Morador / Casa</span>
-                    <p id="kpi-densidade" class="text-3xl font-extrabold text-slate-900 mt-1">0.0</p>
-                    <span class="text-[11px] text-slate-600">Densidade habitacional</span>
+                <div class="p-3 bg-slate-50 border-l-4 border-slate-600 rounded shadow-sm">
+                    <span class="text-[10px] font-black text-slate-800 uppercase tracking-widest">Média Morador/Casa</span>
+                    <p id="kpi-densidade" class="text-2xl font-black text-gray-900 mt-1">0.0</p>
+                    <span class="text-[10px] text-gray-500 font-medium">Densidade habitacional</span>
                 </div>
             </div>
 
             <!-- 2. Condições Crônicas e Riscos Clínicos -->
-            <section class="mb-8">
-                <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200 pb-1 mb-3">
-                    1. Linhas de Cuidado e Vigilância em Saúde
-                </h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="grid-cronicos"></div>
+            <section class="mb-6 avoid-break">
+                <div class="flex items-center gap-2 border-b border-gray-300 pb-1 mb-3">
+                    <h3 class="text-sm font-black text-gray-800 uppercase tracking-wide">
+                        1. Vigilância Clínica e Riscos
+                    </h3>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 print:grid-cols-5 gap-3" id="grid-cronicos"></div>
             </section>
 
             <!-- 3. Vulnerabilidades, Hábitos e Saúde Mental -->
-            <section class="mb-8">
-                <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200 pb-1 mb-3">
-                    2. Vulnerabilidades, Atenção Psicossocial e Acessibilidade
-                </h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="grid-vulnerabilidades"></div>
+            <section class="mb-6 avoid-break">
+                <div class="flex items-center gap-2 border-b border-gray-300 pb-1 mb-3">
+                    <h3 class="text-sm font-black text-gray-800 uppercase tracking-wide">
+                        2. Vulnerabilidades e Atenção Psicossocial
+                    </h3>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 print:grid-cols-5 gap-3" id="grid-vulnerabilidades"></div>
             </section>
 
             <!-- 4. Condições de Moradia, Infraestrutura e Peridomicílio -->
-            <section class="mb-8">
-                <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200 pb-1 mb-3">
-                    3. Caracterização Habitacional e Vigilância Zoonótica
-                </h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="grid-domiciliar"></div>
+            <section class="avoid-break">
+                <div class="flex items-center gap-2 border-b border-gray-300 pb-1 mb-3">
+                    <h3 class="text-sm font-black text-gray-800 uppercase tracking-wide">
+                        3. Habitação e Vigilância Zoonótica
+                    </h3>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 print:grid-cols-5 gap-3" id="grid-domiciliar"></div>
             </section>
 
         </div>
     </div>
+
     <script>
         const idProfissional = {{ id_profissional }};
 
@@ -151,7 +158,7 @@
         document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
         document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";
 
-        // 1. O nosso cofre de segurança (SVGs inline que não dependem de internet)
+        // Cofre de segurança (SVGs inline que não dependem de internet)
         const svgsDeSeguranca = {
             coracao: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>`,
             gota: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2.252A8.014 8.014 0 0117.723 9c0 3.866-5.723 12.748-5.723 12.748S6.277 12.866 6.277 9A8.014 8.014 0 0112 2.252z"></path></svg>`,
@@ -166,18 +173,15 @@
             lupa: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"></path></svg>`
         };
 
-        // 2. Função inteligente de Fallback
-        // Se a imagem externa falhar (onerror), a própria tag <img> é substituída pelo SVG
-        window.svgsDeSeguranca = svgsDeSeguranca; // Expõe para o escopo global do onerror
+        // Função inteligente de Fallback
+        window.svgsDeSeguranca = svgsDeSeguranca;
         function obterIconeSeguro(chaveSvg, urlExterna) {
             return `<img src="${urlExterna}" class="w-6 h-6 object-contain drop-shadow-sm" 
                          alt="${chaveSvg}" 
                          onerror="this.outerHTML = window.svgsDeSeguranca['${chaveSvg}']">`;
         }
 
-        // 3. O dicionário de ícones (Agora usando as URLs do CDN que você escolher)
         const icons = {
-            // Exemplos genéricos. Substitua as URLs pelas imagens exatas do Flaticon/CDN que aprovar
             coracao: obterIconeSeguro('coracao', 'https://cdn-icons-png.flaticon.com/512/833/833472.png'),
             gota: obterIconeSeguro('gota', 'https://cdn-icons-png.flaticon.com/512/4228/4228719.png'),
             alerta: obterIconeSeguro('alerta', 'https://cdn-icons-png.flaticon.com/512/1076/1076337.png'),
@@ -208,20 +212,20 @@
             
             if (valTotalRef > 0) {
                 const pct = ((valor / valTotalRef) * 100).toFixed(1);
-                pctHtml = `<span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded ${t.pctBg} ${t.pctText} ml-2">${pct}%</span>`;
+                pctHtml = `<span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded ${t.pctBg} ${t.pctText}">${pct}%</span>`;
             }
 
             return `
-                <div class="flex flex-col p-3 rounded-lg ${t.bg} border ${t.border} shadow-sm">
-                    <div class="flex items-center justify-between mb-2">
-                        <div class="${t.iconBg} p-1.5 rounded border ${t.border} ${t.iconText}">
+                <div class="flex flex-col p-2.5 rounded-lg ${t.bg} border ${t.border} shadow-sm">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <div class="${t.iconBg} p-1 rounded border ${t.border} ${t.iconText}">
                             ${iconSvg}
                         </div>
                         ${pctHtml}
                     </div>
                     <div>
-                        <div class="text-[10px] font-bold text-gray-600 uppercase tracking-tight leading-tight line-clamp-2 min-h-[30px]">${label}</div>
-                        <div class="text-2xl font-black text-gray-900 mt-1">${valor}</div>
+                        <div class="text-[9px] font-bold text-gray-600 uppercase tracking-tight leading-tight line-clamp-2 h-[26px]">${label}</div>
+                        <div class="text-xl font-black text-gray-900 mt-0.5">${valor}</div>
                     </div>
                 </div>
             `;
