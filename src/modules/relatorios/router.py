@@ -110,14 +110,36 @@ async def api_relatorio_procedimentos(
         dias_desconto=dias_desconto,
     )
 
+
 @router.get("/profissionais/{id_profissional}/cadastros-territorio")
 async def relatorio_cadastros_territorio(
     id_profissional: int,
     ano: int = 2026,
     mes_inicio: int = 1,
     mes_fim: int = 12,
-    session: AsyncSession = Depends(get_db_session),
+    session: DbSession = None,
 ):
     return await service.gerar_relatorio_cadastros(
         session, id_profissional, ano, mes_inicio, mes_fim
+    )
+
+
+@router.get(
+    "/profissionais/{id_profissional}/relatorio-executivo",
+    summary="Painel Executivo: Auditoria e Conformidade Legal",
+    description="Consolida Visitas, Matriz e Território, devolvendo um sistema de semáforos com base no Previne Brasil.",
+)
+async def api_relatorio_executivo(
+    id_profissional: int = Path(..., description="ID numérico do profissional"),
+    ano: int = Query(2026, description="Ano da competência"),
+    mes_inicio: int = Query(1, ge=1, le=12, description="Mês inicial numérico"),
+    mes_fim: int = Query(12, ge=1, le=12, description="Mês final numérico"),
+    session: DbSession = None,
+):
+    return await service.gerar_relatorio_executivo(
+        session,
+        id_profissional=id_profissional,
+        ano=ano,
+        mes_inicio=mes_inicio,
+        mes_fim=mes_fim,
     )
