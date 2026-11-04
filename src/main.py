@@ -69,13 +69,16 @@ def create_app() -> FastAPI:
             "matriz_serie_historica": "relatorio_matriz.html",
             "cadastros_territoriais": "relatorio_cadastros.html",
             "relatorio_executivo": "relatorio_executivo.html",
+
+            # MÓDULO SAÚDE BUCAL (Sprint Atual)
+            "consultas_odontologicas": "relatorio_consultas_odonto.html",
+            "procedimentos_odonto": "relatorio_procedimentos_odonto.html",
+    
             # FASE 3 e 4: Em Desenvolvimento (Mapeados para a página de contingência)
             "visitas_endemias": "em_construcao.html",
             "consultas_medicas": "em_construcao.html",
             "consultas_enfermagem": "em_construcao.html",
             "vacinacao_administrada": "em_construcao.html",
-            "consultas_odontologicas": "em_construcao.html",
-            "procedimentos_odonto": "em_construcao.html",
             "atendimentos_emulti": "em_construcao.html",
             "atividades_coletivas": "em_construcao.html",
             "cadastros_recepcao": "em_construcao.html",
