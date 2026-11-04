@@ -36,6 +36,20 @@ def create_app() -> FastAPI:
     async def pagina_busca(request: Request):
         return templates.TemplateResponse("busca.html", {"request": request})
 
+    @app.get("/dashboard/{id_profissional}", include_in_schema=False)
+    async def painel_dashboard(
+        request: Request, id_profissional: int, nome: str = "Profissional"
+    ):
+        """Renderiza o layout com Sidebar Lateral para navegação fluida."""
+        return templates.TemplateResponse(
+            "dashboard.html",
+            {
+                "request": request,
+                "id_profissional": id_profissional,
+                "nome_profissional": nome,
+            },
+        )
+
     @app.get("/relatorio/{id_profissional}", include_in_schema=False)
     async def pagina_relatorio(
         request: Request,
