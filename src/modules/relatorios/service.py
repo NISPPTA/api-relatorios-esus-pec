@@ -993,5 +993,251 @@ class RelatoriosService:
             },
         }
 
+    async def gerar_relatorio_consultas_odonto(
+        self,
+        session: AsyncSession,
+        id_profissional: int,
+        ano: int,
+        mes_inicio: int,
+        mes_fim: int,
+    ) -> dict[str, Any]:
+        """
+        Gera o relatório consolidado de atendimentos odontológicos: perfil demográfico,
+        vigilância em saúde bucal, condutas clínicas e encaminhamentos ao CEO.
+        """
+        sql = """
+            SELECT 
+                t.nu_mes AS mes,
+                COUNT(1) AS total_atendimentos,
+
+                -- Perfil e Populações Prioritárias
+                COALESCE(SUM(f.st_gestante), 0) AS gestantes_atendidas,
+                COALESCE(SUM(f.st_paciente_necessidades_espec), 0) AS pac_necessidades_especiais,
+
+                -- Condutas Clínicas e Desfechos
+                COALESCE(SUM(f.st_conduta_tratamento_concluid), 0) AS tratamentos_concluidos,
+                COALESCE(SUM(f.st_conduta_consulta_agendada), 0) AS retornos_agendados,
+                COALESCE(SUM(f.st_conduta_alta_episodio), 0) AS altas_episodio,
+
+                -- Vigilância em Saúde Bucal
+                COALESCE(SUM(f.st_vigil_dor_dente), 0) AS queixa_dor_dente,
+                COALESCE(SUM(f.st_vigil_abscesso_dentoalveola), 0) AS abscesso_dentoalveolar,
+                COALESCE(SUM(f.st_vigil_traumat_dentoalveolar), 0) AS traumatismo_dental,
+                COALESCE(SUM(f.st_vigil_alterac_tecidos_moles), 0) AS lesao_tecidos_moles,
+                COALESCE(SUM(f.st_vigil_fluorose_dentaria), 0) AS fluorose_dentaria,
+
+                -- Fornecimento de Insumos Básicos
+                COALESCE(SUM(f.st_fornecimento_escova_dental), 0) AS escovas_entregues,
+                COALESCE(SUM(f.st_fornecimento_creme_dental), 0) AS cremes_entregues,
+                COALESCE(SUM(f.st_fornecimento_fio_dental), 0) AS fios_entregues,
+
+                -- Encaminhamentos Especializados (CEO)
+                COALESCE(SUM(f.st_encaminhamento_endodontia), 0) AS encam_endodontia,
+                COALESCE(SUM(f.st_encaminhamento_cirurgia_bmf), 0) AS encam_bucomaxilo,
+                COALESCE(SUM(f.st_encaminhamento_periodontia), 0) AS encam_periodontia,
+                COALESCE(SUM(f.st_encaminhamento_protese_dent), 0) AS encam_protese,
+                COALESCE(SUM(f.st_encaminhamento_odontopediat), 0) AS encam_odontopediatria,
+                COALESCE(SUM(f.st_encaminhamento_estomatologi), 0) AS encam_estomatologia
+            FROM tb_fat_atendimento_odonto f
+            JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = f.co_dim_tempo
+            WHERE f.co_dim_profissional_1 = :id_prof
+              AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+            GROUP BY t.nu_mes
+            ORDER BY t.nu_mes ASC;
+        """
+
+        parametros = {
+            "id_prof": id_profissional,
+            "ano": ano,
+            "mes_inicio": mes_inicio,
+            "mes_fim": mes_fim,
+        }
+        res = await session.execute(text(sql), parametros)
+        linhas = res.mappings().all()
+
+        meses_nomes = {
+            1: "Jan",
+            2: "Fev",
+            3: "Mar",
+            4: "Abr",
+            5: "Mai",
+            6: "Jun",
+            7: "Jul",
+            8: "Ago",
+            9: "Set",
+            10: "Out",
+            11: "Nov",
+            12: "Dez",
+        }
+
+        evolucao_mensal = []
+        totais = {
+            "total_atendimentos": 0,
+            "gestantes_atendidas": 0,
+            "pac_necessidades_especiais": 0,
+            "tratamentos_concluidos": 0,
+            "retornos_agendados": 0,
+            "altas_episodio": 0,
+            "queixa_dor_dente": 0,
+            "abscesso_dentoalveolar": 0,
+            "traumatismo_dental": 0,
+            "lesao_tecidos_moles": 0,
+            "fluorose_dentaria": 0,
+            "escovas_entregues": 0,
+            "cremes_entregues": 0,
+            "fios_entregues": 0,
+            "encam_endodontia": 0,
+            "encam_bucomaxilo": 0,
+            "encam_periodontia": 0,
+            "encam_protese": 0,
+            "encam_odontopediatria": 0,
+            "encam_estomatologia": 0,
+        }
+
+        for r in linhas:
+            mes_num = r["mes"]
+            evolucao_mensal.append(
+                {
+                    "mes_numero": mes_num,
+                    "mes": meses_nomes.get(mes_num, str(mes_num)),
+                    **{k: int(v) for k, v in r.items() if k != "mes"},
+                }
+            )
+            for k in totais:
+                totais[k] += int(r[k] or 0)
+
+        return {
+            "resumo": totais,
+            "evolucao_mensal": evolucao_mensal,
+        }
+
+    async def gerar_relatorio_procedimentos_odonto(
+        self,
+        session: AsyncSession,
+        id_profissional: int,
+        ano: int,
+        mes_inicio: int,
+        mes_fim: int,
+    ) -> dict[str, Any]:
+        """
+        Agrupa e categoriza os procedimentos realizados na cadeira odontológica (SIGTAP),
+        separando ações preventivas, restauradoras, cirúrgicas e endodônticas.
+        """
+        sql = """
+            SELECT 
+                p.co_proced AS codigo_sigtap,
+                p.ds_proced AS procedimento,
+                SUM(fp.qt_procedimentos) AS quantidade
+            FROM tb_fat_atend_odonto_proced fp
+            JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fp.co_dim_tempo
+            JOIN tb_dim_procedimento p ON p.co_seq_dim_procedimento = fp.co_dim_procedimento
+            WHERE fp.co_dim_profissional_1 = :id_prof
+              AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+            GROUP BY p.co_proced, p.ds_proced
+            ORDER BY quantidade DESC;
+        """
+
+        parametros = {
+            "id_prof": id_profissional,
+            "ano": ano,
+            "mes_inicio": mes_inicio,
+            "mes_fim": mes_fim,
+        }
+        res = await session.execute(text(sql), parametros)
+        linhas = res.mappings().all()
+
+        detalhamento = []
+        total_procedimentos = 0
+
+        # Classificação clínica para saúde bucal
+        categorias_procedimentos = {
+            "prevencao": {
+                "titulo": "Prevenção e Atenção Básica",
+                "total": 0,
+                "itens": [],
+            },
+            "dentistica": {
+                "titulo": "Dentística Restauradora",
+                "total": 0,
+                "itens": [],
+            },
+            "periodontia": {
+                "titulo": "Periodontia e Profilaxia",
+                "total": 0,
+                "itens": [],
+            },
+            "cirurgia": {"titulo": "Cirurgia e Exodontias", "total": 0, "itens": []},
+            "endodontia": {"titulo": "Endodontia e Urgência", "total": 0, "itens": []},
+            "outros": {"titulo": "Outros Procedimentos", "total": 0, "itens": []},
+        }
+
+        for r in linhas:
+            cod = r["codigo_sigtap"]
+            desc = r["procedimento"]
+            qtd = int(r["quantidade"] or 0)
+            total_procedimentos += qtd
+
+            item = {"codigo_sigtap": cod, "procedimento": desc, "quantidade": qtd}
+            detalhamento.append(item)
+
+            desc_upper = desc.upper()
+            if any(
+                term in desc_upper
+                for term in [
+                    "HIGIENE BUCAL",
+                    "FLÚOR",
+                    "SELAMENTO",
+                    "PROGRAMÁTICA",
+                    "COMPORTAMENTO",
+                ]
+            ):
+                cat_alvo = "prevencao"
+            elif any(
+                term in desc_upper
+                for term in [
+                    "RESTAURAÇÃO",
+                    "RESINA",
+                    "IONÔMERO",
+                    "TRA/ART",
+                    "RESTAURADOR",
+                ]
+            ):
+                cat_alvo = "dentistica"
+            elif any(
+                term in desc_upper
+                for term in ["RASPAGEM", "PROFILAXIA", "PLACA BACTERIANA"]
+            ):
+                cat_alvo = "periodontia"
+            elif any(
+                term in desc_upper
+                for term in [
+                    "EXODONTIA",
+                    "SUTURA",
+                    "CIRURGIA",
+                    "ODONTOSECÇÃO",
+                    "PONTOS",
+                ]
+            ):
+                cat_alvo = "cirurgia"
+            elif any(
+                term in desc_upper
+                for term in ["POLPA", "CURATIVO", "URGÊNCIA", "PULPAR", "BIOMECANICO"]
+            ):
+                cat_alvo = "endodontia"
+            else:
+                cat_alvo = "outros"
+
+            categorias_procedimentos[cat_alvo]["total"] += qtd
+            categorias_procedimentos[cat_alvo]["itens"].append(item)
+
+        return {
+            "resumo": {
+                "total_procedimentos": total_procedimentos,
+                "total_tipos_distintos": len(detalhamento),
+            },
+            "categorias": categorias_procedimentos,
+            "detalhamento": detalhamento,
+        }
+
 
 service = RelatoriosService()
