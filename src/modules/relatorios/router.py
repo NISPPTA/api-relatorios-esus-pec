@@ -143,3 +143,31 @@ async def api_relatorio_executivo(
         mes_inicio=mes_inicio,
         mes_fim=mes_fim,
     )
+
+
+@router.get("/profissionais/{id_profissional}/consultas-odonto")
+async def obter_relatorio_consultas_odonto(
+    id_profissional: int,
+    ano: int = Query(2026, ge=2020, le=2030),
+    mes_inicio: int = Query(1, ge=1, le=12),
+    mes_fim: int = Query(12, ge=1, le=12),
+    session: DbSession = None,
+):
+    """Retorna os dados consolidados de consultas e vigilância odontológica."""
+    return await service.gerar_relatorio_consultas_odonto(
+        session, id_profissional, ano, mes_inicio, mes_fim
+    )
+
+
+@router.get("/profissionais/{id_profissional}/procedimentos-odonto")
+async def obter_relatorio_procedimentos_odonto(
+    id_profissional: int,
+    ano: int = Query(2026, ge=2020, le=2030),
+    mes_inicio: int = Query(1, ge=1, le=12),
+    mes_fim: int = Query(12, ge=1, le=12),
+    session: DbSession = None,
+):
+    """Retorna o detalhamento categorizado dos procedimentos odontológicos executados."""
+    return await service.gerar_relatorio_procedimentos_odonto(
+        session, id_profissional, ano, mes_inicio, mes_fim
+    )
