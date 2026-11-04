@@ -888,7 +888,7 @@ class RelatoriosService:
             else 0
         )
         if taxa_cobertura >= 1.5:
-            status_pnab = {"status": "verde", "msg": "Cobertura Territorial Excelent"}
+            status_pnab = {"status": "verde", "msg": "Cobertura Territorial Excelente"}
         elif taxa_cobertura >= 1.0:
             status_pnab = {"status": "verde", "msg": "Cobertura Territorial Conforme"}
         elif taxa_cobertura >= 0.5:
@@ -916,18 +916,18 @@ class RelatoriosService:
                     "msg": "Acompanhamento materno satisfatório.",
                 }
             else:
-                defict = gestantes_cad - visitas_gestante
+                deficit = gestantes_cad - visitas_gestante
                 status_materno = {
                     "status": "vermelho",
-                    "msg": f"Alerta Crítico: {defict} gestantes com possível desassistência ou falha de registro.",
+                    "msg": f"Alerta Crítico: {deficit} gestantes com possível desassistência ou falha de registro.",
                 }
 
-        # 2.3 Vigilância Epidemiológica de Crónicos
-        # Basta garantir que há mais visitas direcionadas ao agravo do que pacientes doentes.
+        # 2.3 Vigilância Epidemiológica de Crônicos
+        # Basta garantir que há mais visitas direcionadas ao agravo do que pacientes na base.
         if hipertensos_cad == 0 and diabeticos_cad == 0:
             status_cronicos = {
                 "status": "amarelo",
-                "msg": "Subnotificação suspeita de doentes crónicos.",
+                "msg": "Subnotificação suspeita de pacientes crônicos.",
             }
         else:
             visitas_cronicas = visitas_has + visitas_dm
@@ -935,12 +935,12 @@ class RelatoriosService:
             if visitas_cronicas >= pacientes_cronicos:
                 status_cronicos = {
                     "status": "verde",
-                    "msg": "Cobertura de Crónicos Conforme Normativa",
+                    "msg": "Cobertura de Crônicos Conforme Normativa",
                 }
             else:
                 status_cronicos = {
                     "status": "vermelho",
-                    "msg": "Deficit no acompanhamento de grupos de risco",
+                    "msg": "Déficit no acompanhamento de grupos de risco",
                 }
 
         # 2.4 Vulnerabilidade (MP)
@@ -955,7 +955,7 @@ class RelatoriosService:
                 "msg": "Sem registro de acompanhamento a acamados",
             }
 
-        # 3. Empacotamento do Dossiê para a API
+        # 3. Síntese Analítica para a API (Substituindo o antigo termo "Dossiê")
         return {
             "meta_informacao": {
                 "cidadaos_adscritos": cidadaos_adscritos,
@@ -972,17 +972,17 @@ class RelatoriosService:
                 "materno_infantil": {
                     "diretriz": "Rede Cegonha: Prevenção Materno-Infantil",
                     "resultado": status_materno,
-                    "numeros": f"{visitas_gestante} Registos para {gestantes_cad} Gestantes Cadastradas",
+                    "numeros": f"{visitas_gestante} Registros para {gestantes_cad} Gestantes Cadastradas",
                 },
                 "cronicos": {
                     "diretriz": "Acompanhamento Contínuo (HAS / DM)",
                     "resultado": status_cronicos,
-                    "numeros": f"{visitas_has + visitas_dm} Registos para {hipertensos_cad + diabeticos_cad} Doentes",
+                    "numeros": f"{visitas_has + visitas_dm} Registros para {hipertensos_cad + diabeticos_cad} Pacientes",
                 },
                 "equidade": {
                     "diretriz": "Prioridade e Acessibilidade (Acamados e Domiciliados)",
                     "resultado": status_vulnerabilidade,
-                    "numeros": f"{visitas_acamados} registos de acompanhamento a domiciliados",
+                    "numeros": f"{visitas_acamados} registros de acompanhamento a domiciliados",
                 },
             },
             # Encapsula os relatórios integrais caso o Front-end precise extrair algo a mais
