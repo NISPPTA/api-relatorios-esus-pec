@@ -256,19 +256,20 @@
                     // Cálculo da Percentagem Relativa ao Esforço de Campo
                     const pctVisitas = totalVisitas > 0 ? ((i.total / totalVisitas) * 100).toFixed(1) : "0.0";
                     
+                    // O segredo do alinhamento: w-12 (48px) para % e w-10 (40px) para o Total, forçando formato de coluna de tabela
                     linhasItens += `
                         <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
-                            <span class="text-xs text-gray-700">${i.nome}</span>
-                            <div class="flex items-center gap-2">
-                                <span class="text-[9px] font-bold text-gray-400 bg-gray-50 border border-gray-100 px-1 rounded">${pctVisitas}%</span>
-                                <span class="text-xs font-black text-${dataCat.color}-800 bg-${dataCat.color}-100 px-1.5 py-0.5 rounded shadow-sm">${i.total}</span>
+                            <span class="text-xs text-gray-700 truncate flex-1 pr-2" title="${i.nome}">${i.nome}</span>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span class="text-[10px] font-bold text-gray-500 bg-white border border-gray-200 py-0.5 rounded w-12 text-center inline-block shadow-sm">${pctVisitas}%</span>
+                                <span class="text-xs font-black text-${dataCat.color}-800 bg-${dataCat.color}-100 py-0.5 rounded shadow-sm w-10 text-center inline-block">${i.total}</span>
                             </div>
                         </div>
                     `;
                 });
 
                 containerMotivos.innerHTML += `
-                    <div class="bg-white border-t-4 border-${dataCat.color}-500 rounded shadow-sm border p-3 avoid-break hover:shadow-md transition-shadow">
+                    <div class="bg-white border-t-4 border-${dataCat.color}-500 rounded shadow-sm border border-gray-200 p-3 avoid-break hover:shadow-md transition-shadow">
                         <h4 class="text-[10px] font-black text-${dataCat.color}-800 uppercase tracking-widest mb-3">${nomeCat}</h4>
                         <div class="flex flex-col">${linhasItens}</div>
                     </div>
