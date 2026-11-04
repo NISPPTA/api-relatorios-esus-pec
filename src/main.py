@@ -1,9 +1,15 @@
+import os
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from src.modules.relatorios.router import router as relatorios_router
+
+# Cria o diretório estático no arranque para evitar erros no mount, caso ainda não exista
+os.makedirs("static", exist_ok=True)
 
 templates = Jinja2Templates(directory="templates")
 
@@ -18,6 +24,9 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Montagem do diretório estático para os ícones e imagens locais (Fallback)
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
     @app.get("/", include_in_schema=False)
     async def root():
@@ -34,18 +43,19 @@ def create_app() -> FastAPI:
         tipo: str = "procedimentos_ambulatoriais",
         nome: str = "Profissional",
         ano: int = 2026,
-        mes_inicio: int = 5,
-        mes_fim: int = 10,
+        mes_inicio: int = 1,
+        mes_fim: int = 12,
         dias_desconto: int = 0,
     ):
-        # Mapeamento expandido para cobrir todos os 13 relatórios do catálogo
+        # Mapeamento expandido para cobrir todos os 13 relatórios + Painel Executivo
         templates_map = {
-            # FASE 2: Concluídos
+            # FASE 2: Concluídos (Módulo ACS Integrado)
             "procedimentos_ambulatoriais": "relatorio_procedimentos.html",
             "visitas_domiciliares": "relatorio_visitas.html",
             "matriz_serie_historica": "relatorio_matriz.html",
-            # FASE 3 e 4: Em Desenvolvimento (Mapeados para a página de contingência)
             "cadastros_territoriais": "relatorio_cadastros.html",
+            "relatorio_executivo": "relatorio_executivo.html",
+            # FASE 3 e 4: Em Desenvolvimento (Mapeados para a página de contingência)
             "visitas_endemias": "em_construcao.html",
             "consultas_medicas": "em_construcao.html",
             "consultas_enfermagem": "em_construcao.html",
