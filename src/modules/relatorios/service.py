@@ -1141,6 +1141,11 @@ class RelatoriosService:
         for r in linhas:
             cod = r["codigo_sigtap"].strip()
             desc = r["procedimento"].strip()
+            
+            # SANEAMENTO DE NOMENCLATURAS: Padroniza variações de nomes do e-SUS PEC
+            if "RETIRADA DE PONTOS DE CIRURGIAS" in desc.upper():
+                desc = "RETIRADA DE PONTOS DE CIRURGIAS"
+                
             qtd = int(r["quantidade"] or 0)
 
             if desc not in procedimentos_agregados:
