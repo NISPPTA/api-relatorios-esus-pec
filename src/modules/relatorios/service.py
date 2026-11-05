@@ -565,8 +565,7 @@ class RelatoriosService:
                     COALESCE(SUM(ci.st_diabete), 0) AS cad_diabeticos,
                     COALESCE(SUM(ci.st_doenca_cardiaca), 0) AS cad_cardiaca,
                     COALESCE(SUM(ci.st_avc), 0) AS cad_avc,
-                    COALESCE(SUM(ci.st_infarto), 0) AS cad_infarto,
-                    COALESCE(SUM(ci.st_problema_rins), 0) AS cad_rins,
+                    COALESCE(SUM(ci.st_infarto), 0) AS cad_rins,
                     COALESCE(SUM(ci.st_cancer), 0) AS cad_cancer,
                     COALESCE(SUM(ci.st_doenca_respiratoria), 0) AS cad_respiratoria,
                     COALESCE(SUM(ci.st_hanseniase), 0) AS cad_hanseniase,
@@ -844,8 +843,6 @@ class RelatoriosService:
         Orquestra as 3 queries vitais em paralelo e cruza os dados com base em métricas
         do Ministério da Saúde, Previne Brasil e MP, gerando alertas (Verde, Amarelo, Vermelho).
         """
-
-        # Execução sequencial (a AsyncSession do SQLAlchemy não permite concorrência na mesma transação)
         cadastros = await self.gerar_relatorio_cadastros(
             session, id_profissional, ano, mes_inicio, mes_fim
         )
@@ -857,17 +854,14 @@ class RelatoriosService:
         )
 
         # 1. Extração Segura de Variáveis (com default 0)
-        # 1.1 Do Cadastro
         cidadaos_adscritos = int(cadastros.get("total_cadastros_individuais", 0))
         gestantes_cad = int(cadastros.get("cad_gestantes", 0))
         hipertensos_cad = int(cadastros.get("cad_hipertensos", 0))
         diabeticos_cad = int(cadastros.get("cad_diabeticos", 0))
 
-        # 1.2 Das Visitas
         resumo_visitas = visitas.get("resumo", {})
         total_visitas = int(resumo_visitas.get("total_visitas_registradas", 0))
 
-        # Filtrar apenas visitas com sucesso (desfecho 'Realizada')
         visitas_sucesso = sum(
             int(d["total"])
             for d in visitas.get("desfechos", [])
@@ -881,7 +875,6 @@ class RelatoriosService:
         visitas_acamados = int(motivos.get("acomp_domiciliados_acamados", 0))
 
         # 2. Lógica de Conformidade Legal e Alertas
-        # 2.1 Cobertura PNAB (Taxa de visitas por habitante)
         taxa_cobertura = (
             round((visitas_sucesso / cidadaos_adscritos), 2)
             if cidadaos_adscritos > 0
@@ -902,7 +895,6 @@ class RelatoriosService:
                 "msg": "Risco Crítico de Desassistência e Perda de Repasse",
             }
 
-        # 2.2 Proteção Materno-Infantil (Rede Cegonha / Previne)
         if gestantes_cad == 0:
             status_materno = {
                 "status": "amarelo",
@@ -922,8 +914,6 @@ class RelatoriosService:
                     "msg": f"Alerta Crítico: {deficit} gestantes com possível desassistência ou falha de registro.",
                 }
 
-        # 2.3 Vigilância Epidemiológica de Crônicos
-        # Basta garantir que há mais visitas direcionadas ao agravo do que pacientes na base.
         if hipertensos_cad == 0 and diabeticos_cad == 0:
             status_cronicos = {
                 "status": "amarelo",
@@ -943,7 +933,6 @@ class RelatoriosService:
                     "msg": "Déficit no acompanhamento de grupos de risco",
                 }
 
-        # 2.4 Vulnerabilidade (MP)
         if visitas_acamados > 0:
             status_vulnerabilidade = {
                 "status": "verde",
@@ -955,7 +944,6 @@ class RelatoriosService:
                 "msg": "Sem registro de acompanhamento a acamados",
             }
 
-        # 3. Síntese Analítica para a API (Substituindo o antigo termo "Dossiê")
         return {
             "meta_informacao": {
                 "cidadaos_adscritos": cidadaos_adscritos,
@@ -985,7 +973,6 @@ class RelatoriosService:
                     "numeros": f"{visitas_acamados} registros de acompanhamento a domiciliados",
                 },
             },
-            # Encapsula os relatórios integrais caso o Front-end precise extrair algo a mais
             "dados_brutos": {
                 "matriz": matriz,
                 "visitas": visitas,
@@ -1121,7 +1108,8 @@ class RelatoriosService:
     ) -> dict[str, Any]:
         """
         Agrupa e categoriza os procedimentos realizados na cadeira odontológica (SIGTAP),
-        separando ações preventivas, restauradoras, cirúrgicas e endodônticas.
+        aplicando saneamento para códigos atípicos e descrições idênticas registradas
+        em tabelas/formatos diferentes pelo PEC.
         """
         sql = """
             SELECT 
@@ -1134,7 +1122,6 @@ class RelatoriosService:
             WHERE fp.co_dim_profissional_1 = :id_prof
               AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
             GROUP BY p.co_proced, p.ds_proced
-            ORDER BY quantidade DESC;
         """
 
         parametros = {
@@ -1148,8 +1135,29 @@ class RelatoriosService:
 
         detalhamento = []
         total_procedimentos = 0
+        procedimentos_agregados = {}
 
-        # Classificação clínica para saúde bucal
+        # 1. Agrega procedimentos com exatamente a mesma descrição (mesmo que códigos difiram)
+        for r in linhas:
+            cod = r["codigo_sigtap"].strip()
+            desc = r["procedimento"].strip()
+            qtd = int(r["quantidade"] or 0)
+
+            if desc not in procedimentos_agregados:
+                procedimentos_agregados[desc] = {
+                    "codigo_sigtap": cod,
+                    "procedimento": desc,
+                    "quantidade": 0,
+                }
+            else:
+                # Se o procedimento existe com um código diferente (ex: ABPG018 vs SIGTAP oficial),
+                # concatena os códigos para não perder a origem na auditoria visual.
+                if cod not in procedimentos_agregados[desc]["codigo_sigtap"]:
+                    procedimentos_agregados[desc]["codigo_sigtap"] += f" / {cod}"
+
+            procedimentos_agregados[desc]["quantidade"] += qtd
+
+        # 2. Classificação clínica para saúde bucal (Com palavras-chave corrigidas)
         categorias_procedimentos = {
             "prevencao": {
                 "titulo": "Prevenção e Atenção Básica",
@@ -1171,13 +1179,12 @@ class RelatoriosService:
             "outros": {"titulo": "Outros Procedimentos", "total": 0, "itens": []},
         }
 
-        for r in linhas:
-            cod = r["codigo_sigtap"]
-            desc = r["procedimento"]
-            qtd = int(r["quantidade"] or 0)
+        # 3. Distribuição para os grupos baseados nos nomes saneados
+        for item in procedimentos_agregados.values():
+            desc = item["procedimento"]
+            qtd = item["quantidade"]
             total_procedimentos += qtd
 
-            item = {"codigo_sigtap": cod, "procedimento": desc, "quantidade": qtd}
             detalhamento.append(item)
 
             desc_upper = desc.upper()
@@ -1187,6 +1194,7 @@ class RelatoriosService:
                     "HIGIENE BUCAL",
                     "FLÚOR",
                     "SELAMENTO",
+                    "SELANTE",
                     "PROGRAMÁTICA",
                     "COMPORTAMENTO",
                 ]
@@ -1216,12 +1224,21 @@ class RelatoriosService:
                     "CIRURGIA",
                     "ODONTOSECÇÃO",
                     "PONTOS",
+                    "DRENAGEM",
+                    "ABSCESSO",
                 ]
             ):
                 cat_alvo = "cirurgia"
             elif any(
                 term in desc_upper
-                for term in ["POLPA", "CURATIVO", "URGÊNCIA", "PULPAR", "BIOMECANICO"]
+                for term in [
+                    "POLPA",
+                    "CURATIVO",
+                    "URGÊNCIA",
+                    "PULPAR",
+                    "BIOMECANICO",
+                    "PULPOTOMIA",
+                ]
             ):
                 cat_alvo = "endodontia"
             else:
@@ -1236,7 +1253,9 @@ class RelatoriosService:
                 "total_tipos_distintos": len(detalhamento),
             },
             "categorias": categorias_procedimentos,
-            "detalhamento": detalhamento,
+            "detalhamento": sorted(
+                detalhamento, key=lambda x: x["quantidade"], reverse=True
+            ),
         }
 
 
