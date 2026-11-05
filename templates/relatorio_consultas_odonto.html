@@ -11,7 +11,7 @@
             body { background-color: white !important; padding: 0 !important; }
             .no-print { display: none !important; }
             .print-shadow-none { box-shadow: none !important; border: none !important; padding: 0 !important; }
-            .avoid-break { page-break-inside: avoid; }
+            .avoid-break { page-break-inside: avoid; break-inside: avoid; }
         }
         .watermark {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-35deg);
@@ -127,7 +127,7 @@
     </div>
 
     <script>
-        const idProfissional = {{ id_profissional }};
+        const idProfissional = Number("{{ id_profissional }}");
         
         document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
         document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";
@@ -172,27 +172,30 @@
                 document.getElementById('pct-concluidos').textContent = total > 0 ? ((d.tratamentos_concluidos/total)*100).toFixed(1) + "%" : "0%";
 
                 // Vigilância
-                document.getElementById('lista-vigilancia').innerHTML = 
+                const htmlVigilancia = 
                     criarLinha("Queixa de Dor de Dente", d.queixa_dor_dente, total, "rose") +
                     criarLinha("Abscesso Dentoalveolar", d.abscesso_dentoalveolar, total, "rose") +
                     criarLinha("Traumatismo Dental", d.traumatismo_dental, total, "rose") +
                     criarLinha("Lesão de Tecidos Moles", d.lesao_tecidos_moles, total, "rose") +
                     criarLinha("Fluorose Dentária", d.fluorose_dentaria, total, "rose");
+                document.getElementById('lista-vigilancia').innerHTML = htmlVigilancia || '<p class="text-xs text-slate-400 italic py-3 text-center">Nenhuma ocorrência de vigilância registrada.</p>';
 
                 // Insumos
-                document.getElementById('lista-insumos').innerHTML = 
+                const htmlInsumos = 
                     criarLinha("Escovas de Dente", d.escovas_entregues, total, "teal") +
                     criarLinha("Cremes Dentais", d.cremes_entregues, total, "teal") +
                     criarLinha("Fios Dentais", d.fios_entregues, total, "teal");
+                document.getElementById('lista-insumos').innerHTML = htmlInsumos || '<p class="text-xs text-slate-400 italic py-3 text-center">Nenhum fornecimento registrado no período.</p>';
 
                 // Encaminhamentos
-                document.getElementById('lista-encaminhamentos').innerHTML = 
+                const htmlEncaminhamentos = 
                     criarLinha("Endodontia", d.encam_endodontia, total, "indigo") +
                     criarLinha("Cirurgia Bucomaxilofacial", d.encam_bucomaxilo, total, "indigo") +
                     criarLinha("Periodontia", d.encam_periodontia, total, "indigo") +
                     criarLinha("Prótese Dentária", d.encam_protese, total, "indigo") +
                     criarLinha("Odontopediatria", d.encam_odontopediatria, total, "indigo") +
                     criarLinha("Estomatologia", d.encam_estomatologia, total, "indigo");
+                document.getElementById('lista-encaminhamentos').innerHTML = htmlEncaminhamentos || '<p class="text-xs text-slate-400 italic py-3 text-center">Nenhum encaminhamento registrado.</p>';
 
             } catch (e) {
                 console.error(e);

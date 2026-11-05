@@ -134,7 +134,7 @@
     </div>
 
     <script>
-        const idProfissional = {{ id_profissional }};
+        const idProfissional = Number("{{ id_profissional }}");
 
         document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
         document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";

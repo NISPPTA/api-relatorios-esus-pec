@@ -129,7 +129,7 @@
     </div>
 
     <script>
-    const idProfissional = {{ id_profissional }};
+    const idProfissional = Number("{{ id_profissional }}");
     let chartDesfechos = null;
 
     document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
