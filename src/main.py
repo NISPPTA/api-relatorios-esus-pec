@@ -61,7 +61,7 @@ def create_app() -> FastAPI:
         mes_fim: int = 12,
         dias_desconto: int = 0,
     ):
-        # Mapeamento expandido para cobrir todos os 13 relatórios + Painel Executivo
+        # Mapeamento expandido para cobrir os relatórios ativos
         templates_map = {
             # FASE 2: Concluídos (Módulo ACS Integrado)
             "procedimentos_ambulatoriais": "relatorio_procedimentos.html",
@@ -69,12 +69,13 @@ def create_app() -> FastAPI:
             "matriz_serie_historica": "relatorio_matriz.html",
             "cadastros_territoriais": "relatorio_cadastros.html",
             "relatorio_executivo": "relatorio_executivo.html",
-            # MÓDULO SAÚDE BUCAL (Sprint Atual)
+            # MÓDULO SAÚDE BUCAL
             "consultas_odontologicas": "relatorio_consultas_odonto.html",
             "procedimentos_odonto": "relatorio_procedimentos_odonto.html",
-            # FASE 3 e 4: Em Desenvolvimento (Mapeados para a página de contingência)
+            # MÓDULO CLÍNICO / MÉDICO (Sprint 3 Ativa)
+            "consultas_medicas": "relatorio_consultas_medicas.html",
+            # DEMAIS MÓDULOS (Página de contingência)
             "visitas_endemias": "em_construcao.html",
-            "consultas_medicas": "em_construcao.html",
             "consultas_enfermagem": "em_construcao.html",
             "vacinacao_administrada": "em_construcao.html",
             "atendimentos_emulti": "em_construcao.html",
