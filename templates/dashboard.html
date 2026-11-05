@@ -161,7 +161,7 @@
                         btn.className = "btn-nav flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors";
                         
                         const iconSvg = iconesRelatorios[rel.id] || iconesRelatorios["padrao"];
-                        btn.innerHTML = `${iconSvg} <span class="truncate">${rel.titulo}</span>`;
+                        btn.innerHTML = `${iconSvg} <span class="leading-tight text-left">${rel.titulo}</span>`;
                         
                         btn.addEventListener('click', () => carregarRelatorioNoIframe(rel.id));
                         bloco.appendChild(btn);
