@@ -1,483 +1,527 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Boletim Analítico de Consultas Médicas - e-SUS PEC</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        @media print {
-            .no-print { display: none !important; }
-            body { background: white !important; padding: 0 !important; }
-            .shadow-sm, .shadow-md, .shadow-lg { box-shadow: none !important; }
-            .card-break { break-inside: avoid; }
-        }
-        .table-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-        .table-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
-    </style>
-</head>
-    <body class="bg-slate-50 text-slate-800 font-sans p-6 md:p-8 min-h-screen">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Boletim Analítico de Consultas Médicas - e-SUS PEC</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+            @media print {
+                .no-print {
+                    display: none !important;
+                }
 
+                body {
+                    background: white !important;
+                    padding: 0 !important;
+                }
+
+                .shadow-sm,
+                .shadow-md,
+                .shadow-lg {
+                    box-shadow: none !important;
+                }
+
+                .card-break {
+                    break-inside: avoid;
+                }
+            }
+
+            .table-scroll::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+
+            .table-scroll::-webkit-scrollbar-thumb {
+                background-color: #cbd5e1;
+                border-radius: 4px;
+            }
+        </style>
+    </head>
+    <body class="bg-slate-50 text-slate-800 font-sans p-6 md:p-8 min-h-screen">
         <!-- Container Central -->
         <div class="max-w-7xl mx-auto space-y-6">
-
             <!-- 1. Cabeçalho Oficial / Identificação do Profissional -->
             <header class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-wrap justify-between items-center gap-4">
                 <div>
-        <div class="flex items-center gap-2 mb-1.5">
-            <span class="bg-indigo-100 text-indigo-800 text-[10px] font-black tracking-widest px-2.5 py-0.5 rounded uppercase">
-                Atenção Primária à Saúde
-            </span>
-            <span class="bg-slate-100 text-slate-600 text-xs font-semibold px-2.5 py-0.5 rounded">
-                Competência: {{ filtro_ano }} (Mês {{ filtro_mes_inicio }} a {{ filtro_mes_fim }})
-            </span>
-        </div>
-        
-        <!-- Título Principal do Relatório -->
-        <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-            Consultas Médicas e Problemas Avaliados
-        </h1>
-        
-        <!-- Identificação do Profissional em Destaque Secundário -->
-        <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-lg font-bold text-indigo-950" id="txt-nome-medico">Carregando...</span>
-            <span class="text-xs font-semibold text-slate-500 uppercase" id="txt-cbo"></span>
-        </div>
-
-        <div class="flex flex-wrap gap-4 mt-3 text-xs text-slate-600">
-            <div><span class="font-bold text-slate-400">UBS:</span> <span id="txt-ubs" class="font-semibold text-slate-800">-</span></div>
-            <div><span class="font-bold text-slate-400">Equipe:</span> <span id="txt-equipe" class="font-semibold text-slate-800">-</span></div>
-            <div><span class="font-bold text-slate-400">CNES:</span> <span id="txt-cnes" class="font-mono font-semibold text-slate-800">-</span></div>
-            <div><span class="font-bold text-slate-400">INE:</span> <span id="txt-ine" class="font-mono font-semibold text-slate-800">-</span></div>
-        </div>
-    </div>
-            <div class="flex items-center gap-3 no-print">
-                <button onclick="window.print()" class="flex items-center gap-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold px-4 py-2 rounded-lg text-xs transition-colors shadow-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                    Imprimir Boletim
-                </button>
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <span class="bg-indigo-100 text-indigo-800 text-[10px] font-black tracking-widest px-2.5 py-0.5 rounded uppercase">
+                            Atenção Primária à Saúde
+                        </span>
+                        <span class="bg-slate-100 text-slate-600 text-xs font-semibold px-2.5 py-0.5 rounded">
+                            Competência: {{ filtro_ano }} (Mês {{ filtro_mes_inicio }} a {{ filtro_mes_fim }})
+                        </span>
+                    </div>
+                    <!-- Título Principal do Relatório -->
+                    <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+                        Consultas Médicas e Problemas Avaliados
+                    </h1>
+                    <!-- Identificação do Profissional em Destaque Secundário -->
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <span class="text-lg font-bold text-indigo-950" id="txt-nome-medico">Carregando...</span>
+                        <span class="text-xs font-semibold text-slate-500 uppercase" id="txt-cbo"></span>
+                    </div>
+                    <div class="flex flex-wrap gap-4 mt-3 text-xs text-slate-600">
+                        <div><span class="font-bold text-slate-400">UBS:</span> <span id="txt-ubs"
+                                                                                      class="font-semibold text-slate-800">-</span></div>
+                        <div><span class="font-bold text-slate-400">Equipe:</span> <span id="txt-equipe"
+                                                                                         class="font-semibold text-slate-800">-</span></div>
+                        <div><span class="font-bold text-slate-400">CNES:</span> <span id="txt-cnes"
+                                                                                       class="font-mono font-semibold text-slate-800">-</span></div>
+                        <div><span class="font-bold text-slate-400">INE:</span> <span id="txt-ine"
+                                                                                      class="font-mono font-semibold text-slate-800">-</span></div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 no-print">
+                    <button type="button"
+                            onclick="window.print()"
+                            class="flex items-center gap-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold px-4 py-2 rounded-lg text-xs transition-colors shadow-sm">
+                        <svg class="w-4 h-4"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="2"
+                             viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z">
+                            </path>
+                        </svg>
+                        Imprimir Boletim
+                    </button>
+                </div>
+            </header>
+            <!-- Loading State -->
+            <div id="loading-container"
+                 class="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent">
+                </div>
+                <p class="mt-3 text-sm font-semibold text-slate-600">Processando cruzamento dimensional e auditoria de agendas...</p>
             </div>
-        </header>
-
-        <!-- Loading State -->
-        <div id="loading-container" class="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
-            <p class="mt-3 text-sm font-semibold text-slate-600">Processando cruzamento dimensional e auditoria de agendas...</p>
-        </div>
-
-        <!-- Conteúdo do Dashboard (Oculto até finalizar fetch) -->
-        <div id="dashboard-content" class="space-y-6 hidden">
-
-            <!-- 2. Grid de Cards Superiores (KPIs Operacionais e Clínicos) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                
-                <!-- Card 1: Total de Consultas -->
-                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                    <div>
-                        <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Volume Assistencial</span>
-                        <h3 id="card-total-atendimentos" class="text-3xl font-black text-slate-900 mt-1">0</h3>
-                        <p class="text-xs text-slate-500 mt-1">Total de consultas médicas</p>
-                    </div>
-                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between text-xs font-semibold">
-                        <span class="text-emerald-700">Agendados: <b id="kpi-agendados">0</b></span>
-                        <span class="text-indigo-700">Espontâneos: <b id="kpi-espontaneos">0</b></span>
-                    </div>
-                </div>
-
-                <!-- Card 2: Qualidade de Exame Físico (Sinais Vitais) -->
-                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                    <div>
-                        <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Qualidade Clínica (Consultório)</span>
-                        <div class="flex items-baseline gap-2 mt-1">
-                            <h3 id="card-taxa-pa" class="text-3xl font-black text-slate-900">0%</h3>
-                            <span class="text-xs font-bold text-slate-500">Pressão Arterial</span>
-                        </div>
-                        <p id="card-sub-pa" class="text-xs text-slate-500 mt-0.5">0 consultas aferidas</p>
-                    </div>
-                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold">
-                        <span class="text-slate-600">Peso / Antropometria:</span>
-                        <span id="kpi-peso-pct" class="font-black text-indigo-600">0%</span>
-                    </div>
-                </div>
-
-                <!-- Card 3: Semáforo de Absenteísmo Real Auditado -->
-                <div id="box-absenteismo" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                    <div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Taxa de Absenteísmo Real</span>
-                            <span id="badge-alerta-agenda" class="text-[9px] font-black px-2 py-0.5 rounded uppercase">Auditoria</span>
-                        </div>
-                        <h3 id="card-taxa-absenteismo" class="text-3xl font-black mt-1">0%</h3>
-                        <p id="card-desc-faltas" class="text-xs mt-0.5">0 faltas auditadas no período</p>
-                    </div>
-                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between text-[11px] font-medium text-slate-500">
-                        <span>Faltas Manuais: <b id="kpi-faltas-manuais" class="text-slate-700">0</b></span>
-                        <span>Faltas Inércia: <b id="kpi-faltas-inercia" class="text-rose-600">0</b></span>
-                    </div>
-                </div>
-
-                <!-- Card 4: Saúde Materna e Desfechos -->
-                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                    <div>
-                        <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Rede Cegonha & Desfechos</span>
-                        <div class="flex items-baseline gap-2 mt-1">
-                            <h3 id="card-gestantes" class="text-3xl font-black text-indigo-600">0</h3>
-                            <span class="text-xs font-bold text-slate-600">Gestantes Atendidas</span>
-                        </div>
-                        <p class="text-xs text-slate-500 mt-0.5">Acompanhamento pré-natal</p>
-                    </div>
-                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between text-xs font-semibold">
-                        <span class="text-slate-600">Encam. Especialista: <b id="kpi-encaminhamentos" class="text-amber-700">0</b></span>
-                        <span class="text-slate-600">Altas: <b id="kpi-altas" class="text-slate-800">0</b></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3. Seção de Gráficos: Pirâmide Populacional e Análise da Agenda -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                <!-- Gráfico de Faixas Etárias (Pirâmide) -->
-                <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm card-break">
-                    <div class="flex justify-between items-center mb-4">
+            <!-- Conteúdo do Dashboard (Oculto até finalizar fetch) -->
+            <div id="dashboard-content" class="space-y-6 hidden">
+                <!-- 2. Grid de Cards Superiores (KPIs Operacionais e Clínicos) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Card 1: Total de Consultas -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
                         <div>
-                            <h4 class="text-base font-black text-slate-900">Distribuição por Faixas Etárias</h4>
-                            <p class="text-xs text-slate-500">Calculado dinamicamente com base na data da consulta e nascimento</p>
+                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Volume Assistencial</span>
+                            <h3 id="card-total-atendimentos"
+                                class="text-3xl font-black text-slate-900 mt-1">0</h3>
+                            <p class="text-xs text-slate-500 mt-1">Total de consultas médicas</p>
                         </div>
-                        <div class="text-right">
-                            <span id="txt-total-demografia" class="text-xs font-bold text-slate-400">Total: 0 pacientes</span>
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between text-xs font-semibold">
+                            <span class="text-emerald-700">Agendados: <b id="kpi-agendados">0</b></span>
+                            <span class="text-indigo-700">Espontâneos: <b id="kpi-espontaneos">0</b></span>
                         </div>
                     </div>
-                    <div class="h-64">
-                        <canvas id="chartFaixasEtarias"></canvas>
+                    <!-- Card 2: Qualidade de Exame Físico (Sinais Vitais) -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Qualidade Clínica (Consultório)</span>
+                            <div class="flex items-baseline gap-2 mt-1">
+                                <h3 id="card-taxa-pa" class="text-3xl font-black text-slate-900">0%</h3>
+                                <span class="text-xs font-bold text-slate-500">Pressão Arterial</span>
+                            </div>
+                            <p id="card-sub-pa" class="text-xs text-slate-500 mt-0.5">0 consultas aferidas</p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold">
+                            <span class="text-slate-600">Peso / Antropometria:</span>
+                            <span id="kpi-peso-pct" class="font-black text-indigo-600">0%</span>
+                        </div>
+                    </div>
+                    <!-- Card 3: Semáforo de Absenteísmo Real Auditado -->
+                    <div id="box-absenteismo"
+                         class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Taxa de Absenteísmo Real</span>
+                                <span id="badge-alerta-agenda"
+                                      class="text-[9px] font-black px-2 py-0.5 rounded uppercase">Auditoria</span>
+                            </div>
+                            <h3 id="card-taxa-absenteismo" class="text-3xl font-black mt-1">0%</h3>
+                            <p id="card-desc-faltas" class="text-xs mt-0.5">0 faltas auditadas no período</p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between text-[11px] font-medium text-slate-500">
+                            <span>Faltas Manuais: <b id="kpi-faltas-manuais" class="text-slate-700">0</b></span>
+                            <span>Faltas Inércia: <b id="kpi-faltas-inercia" class="text-rose-600">0</b></span>
+                        </div>
+                    </div>
+                    <!-- Card 4: Saúde Materna e Desfechos -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Rede Cegonha & Desfechos</span>
+                            <div class="flex items-baseline gap-2 mt-1">
+                                <h3 id="card-gestantes" class="text-3xl font-black text-indigo-600">0</h3>
+                                <span class="text-xs font-bold text-slate-600">Gestantes Atendidas</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">Acompanhamento pré-natal</p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between text-xs font-semibold">
+                            <span class="text-slate-600">Encam. Especialista: <b id="kpi-encaminhamentos"
+                                                                                 class="text-amber-700">0</b></span>
+                            <span class="text-slate-600">Altas: <b id="kpi-altas" class="text-slate-800">0</b></span>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Gráfico de Sexo e Composição de Agenda -->
-                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between card-break">
-                    <div>
-                        <h4 class="text-base font-black text-slate-900">Perfil por Sexo</h4>
-                        <p class="text-xs text-slate-500 mb-2">Proporção de usuários atendidos</p>
-                        <div class="h-44 relative flex items-center justify-center">
-                            <canvas id="chartSexo"></canvas>
+                <!-- 3. Seção de Gráficos: Pirâmide Populacional e Análise da Agenda -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Gráfico de Faixas Etárias (Pirâmide) -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm card-break">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h4 class="text-base font-black text-slate-900">Distribuição por Faixas Etárias</h4>
+                                <p class="text-xs text-slate-500">Calculado dinamicamente com base na data da consulta e nascimento</p>
+                            </div>
+                            <div class="text-right">
+                                <span id="txt-total-demografia"
+                                      class="text-xs font-bold text-slate-400">Total: 0 pacientes</span>
+                            </div>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="chartFaixasEtarias"></canvas>
                         </div>
                     </div>
-                    <div class="border-t border-slate-100 pt-3 grid grid-cols-2 gap-2 text-center text-xs">
-                        <div class="p-2 rounded bg-indigo-50 border border-indigo-100">
-                            <span class="block text-indigo-600 font-bold">Mulheres</span>
-                            <span id="kpi-mulheres" class="text-base font-black text-indigo-950">0</span>
+                    <!-- Gráfico de Sexo e Composição de Agenda -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between card-break">
+                        <div>
+                            <h4 class="text-base font-black text-slate-900">Perfil por Sexo</h4>
+                            <p class="text-xs text-slate-500 mb-2">Proporção de usuários atendidos</p>
+                            <div class="h-44 relative flex items-center justify-center">
+                                <canvas id="chartSexo"></canvas>
+                            </div>
                         </div>
-                        <div class="p-2 rounded bg-blue-50 border border-blue-100">
-                            <span class="block text-blue-600 font-bold">Homens</span>
-                            <span id="kpi-homens" class="text-base font-black text-blue-950">0</span>
+                        <div class="border-t border-slate-100 pt-3 grid grid-cols-2 gap-2 text-center text-xs">
+                            <div class="p-2 rounded bg-indigo-50 border border-indigo-100">
+                                <span class="block text-indigo-600 font-bold">Mulheres</span>
+                                <span id="kpi-mulheres" class="text-base font-black text-indigo-950">0</span>
+                            </div>
+                            <div class="p-2 rounded bg-blue-50 border border-blue-100">
+                                <span class="block text-blue-600 font-bold">Homens</span>
+                                <span id="kpi-homens" class="text-base font-black text-blue-950">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 4. Auditoria de Agenda e Desfechos Clínicos -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm card-break">
+                    <h4 class="text-base font-black text-slate-900 mb-1">Auditoria Operacional de Agenda e Condutas</h4>
+                    <p class="text-xs text-slate-500 mb-4">Detalhamento de vagas ofertadas, motivos de encerramento e absenteísmo</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                            <span class="text-[10px] font-bold uppercase text-slate-400">Vagas Ofertadas</span>
+                            <p id="det-vagas" class="text-lg font-black text-slate-800 mt-0.5">0</p>
+                        </div>
+                        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                            <span class="text-[10px] font-bold uppercase text-emerald-700">Realizados</span>
+                            <p id="det-realizados"
+                               class="text-lg font-black text-emerald-800 mt-0.5">0</p>
+                        </div>
+                        <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <span class="text-[10px] font-bold uppercase text-amber-700">Faltas Manuais</span>
+                            <p id="det-faltas-manuais"
+                               class="text-lg font-black text-amber-800 mt-0.5">0</p>
+                        </div>
+                        <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg">
+                            <span class="text-[10px] font-bold uppercase text-rose-700">Faltas por Inércia</span>
+                            <p id="det-faltas-inercia"
+                               class="text-lg font-black text-rose-800 mt-0.5">0</p>
+                        </div>
+                        <div class="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                            <span class="text-[10px] font-bold uppercase text-orange-700">Abandonos Fila</span>
+                            <p id="det-abandonos" class="text-lg font-black text-orange-800 mt-0.5">0</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                            <span class="text-[10px] font-bold uppercase text-slate-500">Cancelamentos</span>
+                            <p id="det-cancelados" class="text-lg font-black text-slate-700 mt-0.5">0</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- 5. Tabelas Epidemiológicas: CIDs, CIAPs e Procedimentos Avaliados -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Tabela 1: Top 10 CIDs Diagnosticados -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm card-break flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <div>
+                                    <h4 class="text-base font-black text-slate-900">Top 10 Diagnósticos Anuais (CID-10)</h4>
+                                    <p class="text-xs text-slate-500">Morbidades mais frequentes registradas pelo profissional</p>
+                                </div>
+                                <span class="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded">CID-10</span>
+                            </div>
+                            <div class="overflow-x-auto table-scroll">
+                                <table class="w-full text-left text-xs">
+                                    <thead>
+                                        <tr class="border-b border-slate-200 text-slate-400 uppercase font-black text-[10px]">
+                                            <th class="py-2">Código</th>
+                                            <th class="py-2">Diagnóstico / Doença</th>
+                                            <th class="py-2 text-right">Consultas</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-cids" class="divide-y divide-slate-100">
+                                        <tr>
+                                            <td colspan="3"
+                                                class="py-4 text-center text-slate-400">Carregando CIDs...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Tabela 2: Top CIAP-2 e Procedimentos Avaliados -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm card-break flex flex-col justify-between space-y-6">
+                        <!-- Bloco CIAP-2 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <div>
+                                    <h4 class="text-base font-black text-slate-900">Motivos / Problemas Avaliados (CIAP-2)</h4>
+                                    <p class="text-xs text-slate-500">Acolhimento e vigilância clínica</p>
+                                </div>
+                                <span class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded">CIAP-2</span>
+                            </div>
+                            <div class="overflow-x-auto table-scroll">
+                                <table class="w-full text-left text-xs">
+                                    <thead>
+                                        <tr class="border-b border-slate-200 text-slate-400 uppercase font-black text-[10px]">
+                                            <th class="py-2">Código</th>
+                                            <th class="py-2">Descrição</th>
+                                            <th class="py-2 text-right">Qtd</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-ciaps" class="divide-y divide-slate-100">
+                                        <tr>
+                                            <td colspan="3"
+                                                class="py-4 text-center text-slate-400">Carregando CIAPs...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- Bloco Procedimentos / Exames Avaliados -->
+                        <div class="border-t border-slate-100 pt-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <div>
+                                    <h4 class="text-base font-black text-slate-900">Exames e Procedimentos Avaliados</h4>
+                                    <p class="text-xs text-slate-500">Laudos laboratoriais e intervenções (ABEX / SIGTAP)</p>
+                                </div>
+                                <span class="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded">Exames</span>
+                            </div>
+                            <div class="overflow-x-auto table-scroll">
+                                <table class="w-full text-left text-xs">
+                                    <thead>
+                                        <tr class="border-b border-slate-200 text-slate-400 uppercase font-black text-[10px]">
+                                            <th class="py-2">Código</th>
+                                            <th class="py-2">Procedimento</th>
+                                            <th class="py-2 text-right">Avaliados</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-procedimentos" class="divide-y divide-slate-100">
+                                        <tr>
+                                            <td colspan="3"
+                                                class="py-4 text-center text-slate-400">Carregando Exames...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- 4. Auditoria de Agenda e Desfechos Clínicos -->
-            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm card-break">
-                <h4 class="text-base font-black text-slate-900 mb-1">Auditoria Operacional de Agenda e Condutas</h4>
-                <p class="text-xs text-slate-500 mb-4">Detalhamento de vagas ofertadas, motivos de encerramento e absenteísmo</p>
-                
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
-                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                        <span class="text-[10px] font-bold uppercase text-slate-400">Vagas Ofertadas</span>
-                        <p id="det-vagas" class="text-lg font-black text-slate-800 mt-0.5">0</p>
-                    </div>
-                    <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                        <span class="text-[10px] font-bold uppercase text-emerald-700">Realizados</span>
-                        <p id="det-realizados" class="text-lg font-black text-emerald-800 mt-0.5">0</p>
-                    </div>
-                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                        <span class="text-[10px] font-bold uppercase text-amber-700">Faltas Manuais</span>
-                        <p id="det-faltas-manuais" class="text-lg font-black text-amber-800 mt-0.5">0</p>
-                    </div>
-                    <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg">
-                        <span class="text-[10px] font-bold uppercase text-rose-700">Faltas por Inércia</span>
-                        <p id="det-faltas-inercia" class="text-lg font-black text-rose-800 mt-0.5">0</p>
-                    </div>
-                    <div class="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                        <span class="text-[10px] font-bold uppercase text-orange-700">Abandonos Fila</span>
-                        <p id="det-abandonos" class="text-lg font-black text-orange-800 mt-0.5">0</p>
-                    </div>
-                    <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                        <span class="text-[10px] font-bold uppercase text-slate-500">Cancelamentos</span>
-                        <p id="det-cancelados" class="text-lg font-black text-slate-700 mt-0.5">0</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 5. Tabelas Epidemiológicas: CIDs, CIAPs e Procedimentos Avaliados -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
-                <!-- Tabela 1: Top 10 CIDs Diagnosticados -->
-                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm card-break flex flex-col justify-between">
-                    <div>
-                        <div class="flex justify-between items-center mb-3">
-                            <div>
-                                <h4 class="text-base font-black text-slate-900">Top 10 Diagnósticos Anuais (CID-10)</h4>
-                                <p class="text-xs text-slate-500">Morbidades mais frequentes registradas pelo profissional</p>
-                            </div>
-                            <span class="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded">CID-10</span>
-                        </div>
-                        <div class="overflow-x-auto table-scroll">
-                            <table class="w-full text-left text-xs">
-                                <thead>
-                                    <tr class="border-b border-slate-200 text-slate-400 uppercase font-black text-[10px]">
-                                        <th class="py-2">Código</th>
-                                        <th class="py-2">Diagnóstico / Doença</th>
-                                        <th class="py-2 text-right">Consultas</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbody-cids" class="divide-y divide-slate-100">
-                                    <tr><td colspan="3" class="py-4 text-center text-slate-400">Carregando CIDs...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tabela 2: Top CIAP-2 e Procedimentos Avaliados -->
-                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm card-break flex flex-col justify-between space-y-6">
-                    
-                    <!-- Bloco CIAP-2 -->
-                    <div>
-                        <div class="flex justify-between items-center mb-3">
-                            <div>
-                                <h4 class="text-base font-black text-slate-900">Motivos / Problemas Avaliados (CIAP-2)</h4>
-                                <p class="text-xs text-slate-500">Acolhimento e vigilância clínica</p>
-                            </div>
-                            <span class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded">CIAP-2</span>
-                        </div>
-                        <div class="overflow-x-auto table-scroll">
-                            <table class="w-full text-left text-xs">
-                                <thead>
-                                    <tr class="border-b border-slate-200 text-slate-400 uppercase font-black text-[10px]">
-                                        <th class="py-2">Código</th>
-                                        <th class="py-2">Descrição</th>
-                                        <th class="py-2 text-right">Qtd</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbody-ciaps" class="divide-y divide-slate-100">
-                                    <tr><td colspan="3" class="py-4 text-center text-slate-400">Carregando CIAPs...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Bloco Procedimentos / Exames Avaliados -->
-                    <div class="border-t border-slate-100 pt-4">
-                        <div class="flex justify-between items-center mb-3">
-                            <div>
-                                <h4 class="text-base font-black text-slate-900">Exames e Procedimentos Avaliados</h4>
-                                <p class="text-xs text-slate-500">Laudos laboratoriais e intervenções (ABEX / SIGTAP)</p>
-                            </div>
-                            <span class="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded">Exames</span>
-                        </div>
-                        <div class="overflow-x-auto table-scroll">
-                            <table class="w-full text-left text-xs">
-                                <thead>
-                                    <tr class="border-b border-slate-200 text-slate-400 uppercase font-black text-[10px]">
-                                        <th class="py-2">Código</th>
-                                        <th class="py-2">Procedimento</th>
-                                        <th class="py-2 text-right">Avaliados</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbody-procedimentos" class="divide-y divide-slate-100">
-                                    <tr><td colspan="3" class="py-4 text-center text-slate-400">Carregando Exames...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
         </div>
-    </div>
+        <script>
+            const idProfissional = Number("{{ id_profissional }}");
+            const ano = Number("{{ filtro_ano }}");
+            const mesInicio = Number("{{ filtro_mes_inicio }}");
+            const mesFim = Number("{{ filtro_mes_fim }}");
 
-<script>
-    const idProfissional = Number("{{ id_profissional }}");
-    const ano = Number("{{ filtro_ano }}");
-    const mesInicio = Number("{{ filtro_mes_inicio }}");
-    const mesFim = Number("{{ filtro_mes_fim }}");
+            let chartFaixas = null;
+            let chartSexoInst = null;
 
-    let chartFaixas = null;
-    let chartSexoInst = null;
+            async function carregarDadosRelatorio() {
+                try {
+                    const url = `/api/relatorios/profissionais/${idProfissional}/consultas-medicas?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}`;
+                    const resp = await fetch(url);
+                    if (!resp.ok) throw new Error("Falha ao consultar a API clínica.");
+                    const data = await resp.json();
 
-    async function carregarDadosRelatorio() {
-        try {
-            const url = `/api/relatorios/profissionais/${idProfissional}/consultas-medicas?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}`;
-            const resp = await fetch(url);
-            if (!resp.ok) throw new Error("Falha ao consultar a API clínica.");
-            const data = await resp.json();
+                    // 1. Preenchimento do Cabeçalho Oficial
+                    const prof = data.profissional || {};
+                    document.getElementById('txt-nome-medico').textContent = prof.nome || "{{ nome_profissional }}";
+                    document.getElementById('txt-cbo').textContent = prof.cbo || "-";
+                    document.getElementById('txt-ubs').textContent = prof.ubs || "-";
+                    document.getElementById('txt-equipe').textContent = prof.equipe || "-";
+                    document.getElementById('txt-cnes').textContent = prof.cnes || "-";
+                    document.getElementById('txt-ine').textContent = prof.ine || "-";
 
-            // 1. Preenchimento do Cabeçalho Oficial
-            const prof = data.profissional || {};
-            document.getElementById('txt-nome-medico').textContent = prof.nome || "{{ nome_profissional }}";
-            document.getElementById('txt-cbo').textContent = prof.cbo || "-";
-            document.getElementById('txt-ubs').textContent = prof.ubs || "-";
-            document.getElementById('txt-equipe').textContent = prof.equipe || "-";
-            document.getElementById('txt-cnes').textContent = prof.cnes || "-";
-            document.getElementById('txt-ine').textContent = prof.ine || "-";
+                    // 2. Preenchimento de KPIs Superiores
+                    const prod = data.producao_clinica || {};
+                    document.getElementById('card-total-atendimentos').textContent = (prod.total_atendimentos || 0).toLocaleString('pt-BR');
+                    document.getElementById('kpi-agendados').textContent = (prod.atendimentos_agendados || 0).toLocaleString('pt-BR');
+                    document.getElementById('kpi-espontaneos').textContent = (prod.demanda_espontanea || 0).toLocaleString('pt-BR');
 
-            // 2. Preenchimento de KPIs Superiores
-            const prod = data.producao_clinica || {};
-            document.getElementById('card-total-atendimentos').textContent = (prod.total_atendimentos || 0).toLocaleString('pt-BR');
-            document.getElementById('kpi-agendados').textContent = (prod.atendimentos_agendados || 0).toLocaleString('pt-BR');
-            document.getElementById('kpi-espontaneos').textContent = (prod.demanda_espontanea || 0).toLocaleString('pt-BR');
+                    const vitais = data.exame_fisico_sinais_vitais || {};
+                    document.getElementById('card-taxa-pa').textContent = `${(vitais.taxa_rastreio_pressao_pct || 0).toFixed(1)}%`;
+                    document.getElementById('card-sub-pa').textContent = `${vitais.consultas_com_pa_aferida || 0} consultas aferidas`;
+                    document.getElementById('kpi-peso-pct').textContent = `${(vitais.taxa_rastreio_peso_pct || 0).toFixed(1)}% (${vitais.consultas_com_peso_medido || 0})`;
 
-            const vitais = data.exame_fisico_sinais_vitais || {};
-            document.getElementById('card-taxa-pa').textContent = `${(vitais.taxa_rastreio_pressao_pct || 0).toFixed(1)}%`;
-            document.getElementById('card-sub-pa').textContent = `${vitais.consultas_com_pa_aferida || 0} consultas aferidas`;
-            document.getElementById('kpi-peso-pct').textContent = `${(vitais.taxa_rastreio_peso_pct || 0).toFixed(1)}% (${vitais.consultas_com_peso_medido || 0})`;
+                    // 3. Semáforo de Absenteísmo
+                    const abs = data.gestao_agenda_absenteismo || {};
+                    const resAbs = abs.resumo || {};
+                    const taxaAbs = resAbs.taxa_absenteismo_pct || 0;
+                    const cardTaxaAbs = document.getElementById('card-taxa-absenteismo');
+                    const boxAbs = document.getElementById('box-absenteismo');
+                    const badgeAlerta = document.getElementById('badge-alerta-agenda');
 
-            // 3. Semáforo de Absenteísmo
-            const abs = data.gestao_agenda_absenteismo || {};
-            const resAbs = abs.resumo || {};
-            const taxaAbs = resAbs.taxa_absenteismo_pct || 0;
-            const cardTaxaAbs = document.getElementById('card-taxa-absenteismo');
-            const boxAbs = document.getElementById('box-absenteismo');
-            const badgeAlerta = document.getElementById('badge-alerta-agenda');
+                    cardTaxaAbs.textContent = `${taxaAbs.toFixed(1)}%`;
+                    document.getElementById('card-desc-faltas').textContent = `${resAbs.total_faltas || 0} faltas auditadas`;
+                    document.getElementById('kpi-faltas-manuais').textContent = (resAbs.faltas_manuais || 0).toLocaleString('pt-BR');
+                    document.getElementById('kpi-faltas-inercia').textContent = (resAbs.faltas_por_inercia_sistema || 0).toLocaleString('pt-BR');
 
-            cardTaxaAbs.textContent = `${taxaAbs.toFixed(1)}%`;
-            document.getElementById('card-desc-faltas').textContent = `${resAbs.total_faltas || 0} faltas auditadas`;
-            document.getElementById('kpi-faltas-manuais').textContent = (resAbs.faltas_manuais || 0).toLocaleString('pt-BR');
-            document.getElementById('kpi-faltas-inercia').textContent = (resAbs.faltas_por_inercia_sistema || 0).toLocaleString('pt-BR');
+                    // Regra do Semáforo
+                    if (taxaAbs <= 15) {
+                        cardTaxaAbs.className = "text-3xl font-black mt-1 text-emerald-600";
+                        badgeAlerta.className = "text-[9px] font-black px-2 py-0.5 rounded uppercase bg-emerald-100 text-emerald-800";
+                        badgeAlerta.textContent = "Baixo Absenteísmo";
+                    } else if (taxaAbs <= 25) {
+                        cardTaxaAbs.className = "text-3xl font-black mt-1 text-amber-600";
+                        badgeAlerta.className = "text-[9px] font-black px-2 py-0.5 rounded uppercase bg-amber-100 text-amber-800";
+                        badgeAlerta.textContent = "Atenção Operacional";
+                    } else {
+                        cardTaxaAbs.className = "text-3xl font-black mt-1 text-rose-600";
+                        badgeAlerta.className = "text-[9px] font-black px-2 py-0.5 rounded uppercase bg-rose-100 text-rose-800";
+                        badgeAlerta.textContent = "Absenteísmo Crítico";
+                    }
 
-            // Regra do Semáforo
-            if (taxaAbs <= 15) {
-                cardTaxaAbs.className = "text-3xl font-black mt-1 text-emerald-600";
-                badgeAlerta.className = "text-[9px] font-black px-2 py-0.5 rounded uppercase bg-emerald-100 text-emerald-800";
-                badgeAlerta.textContent = "Baixo Absenteísmo";
-            } else if (taxaAbs <= 25) {
-                cardTaxaAbs.className = "text-3xl font-black mt-1 text-amber-600";
-                badgeAlerta.className = "text-[9px] font-black px-2 py-0.5 rounded uppercase bg-amber-100 text-amber-800";
-                badgeAlerta.textContent = "Atenção Operacional";
-            } else {
-                cardTaxaAbs.className = "text-3xl font-black mt-1 text-rose-600";
-                badgeAlerta.className = "text-[9px] font-black px-2 py-0.5 rounded uppercase bg-rose-100 text-rose-800";
-                badgeAlerta.textContent = "Absenteísmo Crítico";
-            }
+                    // Desfechos / Materno
+                    const demo = data.perfil_demografico || {};
+                    document.getElementById('card-gestantes').textContent = demo.gestantes || 0;
+                    document.getElementById('kpi-encaminhamentos').textContent = (prod.conduta_encaminhamento_especialista || 0).toLocaleString('pt-BR');
+                    document.getElementById('kpi-altas').textContent = (prod.conduta_alta || 0).toLocaleString('pt-BR');
 
-            // Desfechos / Materno
-            const demo = data.perfil_demografico || {};
-            document.getElementById('card-gestantes').textContent = demo.gestantes || 0;
-            document.getElementById('kpi-encaminhamentos').textContent = (prod.conduta_encaminhamento_especialista || 0).toLocaleString('pt-BR');
-            document.getElementById('kpi-altas').textContent = (prod.conduta_alta || 0).toLocaleString('pt-BR');
+                    // 4. Detalhes de Agenda
+                    document.getElementById('det-vagas').textContent = (resAbs.vagas_ofertadas_passado || 0).toLocaleString('pt-BR');
+                    document.getElementById('det-realizados').textContent = (resAbs.atendimentos_realizados || 0).toLocaleString('pt-BR');
+                    document.getElementById('det-faltas-manuais').textContent = (resAbs.faltas_manuais || 0).toLocaleString('pt-BR');
+                    document.getElementById('det-faltas-inercia').textContent = (resAbs.faltas_por_inercia_sistema || 0).toLocaleString('pt-BR');
+                    document.getElementById('det-abandonos').textContent = (resAbs.abandonos_fila_recepcao || 0).toLocaleString('pt-BR');
+                    document.getElementById('det-cancelados').textContent = (resAbs.cancelamentos || 0).toLocaleString('pt-BR');
 
-            // 4. Detalhes de Agenda
-            document.getElementById('det-vagas').textContent = (resAbs.vagas_ofertadas_passado || 0).toLocaleString('pt-BR');
-            document.getElementById('det-realizados').textContent = (resAbs.atendimentos_realizados || 0).toLocaleString('pt-BR');
-            document.getElementById('det-faltas-manuais').textContent = (resAbs.faltas_manuais || 0).toLocaleString('pt-BR');
-            document.getElementById('det-faltas-inercia').textContent = (resAbs.faltas_por_inercia_sistema || 0).toLocaleString('pt-BR');
-            document.getElementById('det-abandonos').textContent = (resAbs.abandonos_fila_recepcao || 0).toLocaleString('pt-BR');
-            document.getElementById('det-cancelados').textContent = (resAbs.cancelamentos || 0).toLocaleString('pt-BR');
+                    // 5. Renderização dos Gráficos (Chart.js)
+                    renderizarGraficos(demo);
 
-            // 5. Renderização dos Gráficos (Chart.js)
-            renderizarGraficos(demo);
+                    // 6. Preenchimento de Tabelas Epidemiológicas
+                    preencherTabelas(data);
 
-            // 6. Preenchimento de Tabelas Epidemiológicas
-            preencherTabelas(data);
+                    // Transição visual
+                    document.getElementById('loading-container').classList.add('hidden');
+                    document.getElementById('dashboard-content').classList.remove('hidden');
 
-            // Transição visual
-            document.getElementById('loading-container').classList.add('hidden');
-            document.getElementById('dashboard-content').classList.remove('hidden');
-
-        } catch (error) {
-            console.error(error);
-            document.getElementById('loading-container').innerHTML = `
+                } catch (error) {
+                    console.error(error);
+                    document.getElementById('loading-container').innerHTML = `
                 <div class="text-rose-600 font-bold text-sm">
                     Ocorreu um erro ao carregar os dados analíticos do médico.
                 </div>
                 <p class="text-xs text-slate-400 mt-1">Verifique a conexão com a API e o console do terminal.</p>
             `;
-        }
-    }
-
-    function renderizarGraficos(demo) {
-        // Gráfico de Faixas Etárias
-        const ctxFaixas = document.getElementById('chartFaixasEtarias').getContext('2d');
-        const labelsFaixas = ['Bebês (0-2)', 'Crianças (3-11)', 'Adolescentes (12-17)', 'Adultos (18-59)', 'Idosos (60+)'];
-        const valoresFaixas = [
-            demo.bebes_0_2 || 0,
-            demo.criancas_3_11 || 0,
-            demo.adolescentes_12_17 || 0,
-            demo.adultos_18_59 || 0,
-            demo.idosos_60_mais || 0
-        ];
-
-        document.getElementById('txt-total-demografia').textContent = `Total: ${(demo.total_atendimentos || 0).toLocaleString('pt-BR')} atendimentos`;
-
-        if (chartFaixas) chartFaixas.destroy();
-        chartFaixas = new Chart(ctxFaixas, {
-            type: 'bar',
-            data: {
-                labels: labelsFaixas,
-                datasets: [{
-                    label: 'Atendimentos',
-                    data: valoresFaixas,
-                    backgroundColor: ['#6366f1', '#3b82f6', '#0ea5e9', '#10b981', '#f59e0b'],
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-                    x: { grid: { display: false } }
                 }
             }
-        });
 
-        // Gráfico de Sexo
-        const ctxSexo = document.getElementById('chartSexo').getContext('2d');
-        const qtdMulheres = demo.mulheres || 0;
-        const qtdHomens = demo.homens || 0;
+            function renderizarGraficos(demo) {
+                // Gráfico de Faixas Etárias
+                const ctxFaixas = document.getElementById('chartFaixasEtarias').getContext('2d');
+                const labelsFaixas = ['Bebês (0-2)', 'Crianças (3-11)', 'Adolescentes (12-17)', 'Adultos (18-59)', 'Idosos (60+)'];
+                const valoresFaixas = [
+                    demo.bebes_0_2 || 0,
+                    demo.criancas_3_11 || 0,
+                    demo.adolescentes_12_17 || 0,
+                    demo.adultos_18_59 || 0,
+                    demo.idosos_60_mais || 0
+                ];
 
-        document.getElementById('kpi-mulheres').textContent = qtdMulheres.toLocaleString('pt-BR');
-        document.getElementById('kpi-homens').textContent = qtdHomens.toLocaleString('pt-BR');
+                document.getElementById('txt-total-demografia').textContent = `Total: ${(demo.total_atendimentos || 0).toLocaleString('pt-BR')} atendimentos`;
 
-        if (chartSexoInst) chartSexoInst.destroy();
-        chartSexoInst = new Chart(ctxSexo, {
-            type: 'doughnut',
-            data: {
-                labels: ['Mulheres', 'Homens'],
-                datasets: [{
-                    data: [qtdMulheres, qtdHomens],
-                    backgroundColor: ['#818cf8', '#38bdf8'],
-                    hoverOffset: 4,
-                    borderWidth: 2,
-                    borderColor: '#ffffff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '70%',
-                plugins: {
-                    legend: { display: false }
-                }
+                if (chartFaixas) chartFaixas.destroy();
+                chartFaixas = new Chart(ctxFaixas, {
+                    type: 'bar',
+                    data: {
+                        labels: labelsFaixas,
+                        datasets: [{
+                            label: 'Atendimentos',
+                            data: valoresFaixas,
+                            backgroundColor: ['#6366f1', '#3b82f6', '#0ea5e9', '#10b981', '#f59e0b'],
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: '#f1f5f9'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Gráfico de Sexo
+                const ctxSexo = document.getElementById('chartSexo').getContext('2d');
+                const qtdMulheres = demo.mulheres || 0;
+                const qtdHomens = demo.homens || 0;
+
+                document.getElementById('kpi-mulheres').textContent = qtdMulheres.toLocaleString('pt-BR');
+                document.getElementById('kpi-homens').textContent = qtdHomens.toLocaleString('pt-BR');
+
+                if (chartSexoInst) chartSexoInst.destroy();
+                chartSexoInst = new Chart(ctxSexo, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Mulheres', 'Homens'],
+                        datasets: [{
+                            data: [qtdMulheres, qtdHomens],
+                            backgroundColor: ['#818cf8', '#38bdf8'],
+                            hoverOffset: 4,
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
             }
-        });
-    }
 
-    function preencherTabelas(data) {
-        // CIDs
-        const tbodyCids = document.getElementById('tbody-cids');
-        const cids = data.morbidades?.top_cid_ano || [];
-        tbodyCids.innerHTML = '';
-        if (cids.length === 0) {
-            tbodyCids.innerHTML = `<tr><td colspan="3" class="py-3 text-center text-slate-400">Nenhum diagnóstico registrado.</td></tr>`;
-        } else {
-            cids.forEach((c, idx) => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition-colors";
-                const isZ760 = c.codigo_cid === 'Z760';
-                tr.innerHTML = `
+            function preencherTabelas(data) {
+                // CIDs
+                const tbodyCids = document.getElementById('tbody-cids');
+                const cids = data.morbidades?.top_cid_ano || [];
+                tbodyCids.innerHTML = '';
+                if (cids.length === 0) {
+                    tbodyCids.innerHTML = `<tr><td colspan="3" class="py-3 text-center text-slate-400">Nenhum diagnóstico registrado.</td></tr>`;
+                } else {
+                    cids.forEach((c, idx) => {
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-slate-50 transition-colors";
+                        const isZ760 = c.codigo_cid === 'Z760';
+                        tr.innerHTML = `
                     <td class="py-2.5 font-mono font-bold ${isZ760 ? 'text-amber-600' : 'text-indigo-600'}">${c.codigo_cid}</td>
                     <td class="py-2.5 text-slate-700 ${isZ760 ? 'font-bold' : ''}">
                         ${c.doenca}
@@ -485,50 +529,50 @@
                     </td>
                     <td class="py-2.5 text-right font-black text-slate-900">${(c.volume_atendimentos || 0).toLocaleString('pt-BR')}</td>
                 `;
-                tbodyCids.appendChild(tr);
-            });
-        }
+                        tbodyCids.appendChild(tr);
+                    });
+                }
 
-        // CIAPs
-        const tbodyCiaps = document.getElementById('tbody-ciaps');
-        const ciaps = data.morbidades?.top_ciap_periodo || [];
-        tbodyCiaps.innerHTML = '';
-        if (ciaps.length === 0) {
-            tbodyCiaps.innerHTML = `<tr><td colspan="3" class="py-3 text-center text-slate-400">Nenhum CIAP registrado.</td></tr>`;
-        } else {
-            ciaps.forEach(ci => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition-colors";
-                tr.innerHTML = `
+                // CIAPs
+                const tbodyCiaps = document.getElementById('tbody-ciaps');
+                const ciaps = data.morbidades?.top_ciap_periodo || [];
+                tbodyCiaps.innerHTML = '';
+                if (ciaps.length === 0) {
+                    tbodyCiaps.innerHTML = `<tr><td colspan="3" class="py-3 text-center text-slate-400">Nenhum CIAP registrado.</td></tr>`;
+                } else {
+                    ciaps.forEach(ci => {
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-slate-50 transition-colors";
+                        tr.innerHTML = `
                     <td class="py-2 font-mono font-bold text-emerald-700">${ci.codigo_ciap}</td>
                     <td class="py-2 text-slate-700">${ci.descricao}</td>
                     <td class="py-2 text-right font-black text-slate-900">${(ci.quantidade || 0).toLocaleString('pt-BR')}</td>
                 `;
-                tbodyCiaps.appendChild(tr);
-            });
-        }
+                        tbodyCiaps.appendChild(tr);
+                    });
+                }
 
-        // Procedimentos / Exames
-        const tbodyProced = document.getElementById('tbody-procedimentos');
-        const procs = data.procedimentos_e_exames_avaliados || [];
-        tbodyProced.innerHTML = '';
-        if (procs.length === 0) {
-            tbodyProced.innerHTML = `<tr><td colspan="3" class="py-3 text-center text-slate-400">Nenhum exame avaliado registrado.</td></tr>`;
-        } else {
-            procs.forEach(p => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition-colors";
-                tr.innerHTML = `
+                // Procedimentos / Exames
+                const tbodyProced = document.getElementById('tbody-procedimentos');
+                const procs = data.procedimentos_e_exames_avaliados || [];
+                tbodyProced.innerHTML = '';
+                if (procs.length === 0) {
+                    tbodyProced.innerHTML = `<tr><td colspan="3" class="py-3 text-center text-slate-400">Nenhum exame avaliado registrado.</td></tr>`;
+                } else {
+                    procs.forEach(p => {
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-slate-50 transition-colors";
+                        tr.innerHTML = `
                     <td class="py-2 font-mono font-bold text-slate-500">${p.codigo_procedimento}</td>
                     <td class="py-2 text-slate-700">${p.nome_procedimento}</td>
                     <td class="py-2 text-right font-black text-slate-900">${(p.total_realizado || 0).toLocaleString('pt-BR')}</td>
                 `;
-                tbodyProced.appendChild(tr);
-            });
-        }
-    }
+                        tbodyProced.appendChild(tr);
+                    });
+                }
+            }
 
-    document.addEventListener('DOMContentLoaded', carregarDadosRelatorio);
-</script>
-</body>
+            document.addEventListener('DOMContentLoaded', carregarDadosRelatorio);
+        </script>
+    </body>
 </html>

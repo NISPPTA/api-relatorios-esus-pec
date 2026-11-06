@@ -1,263 +1,484 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Boletim Analítico de Visitas Domiciliares</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        @page { size: portrait; margin: 10mm; }
-        @media print {
-            body { background-color: white !important; padding: 0 !important; }
-            .no-print { display: none !important; }
-            .print-shadow-none { box-shadow: none !important; border: none !important; padding: 0 !important; }
-            .avoid-break { page-break-inside: avoid; }
-        }
-    </style>
-</head>
-<body class="bg-gray-100 p-6 font-sans text-gray-800">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Boletim Analítico de Visitas Domiciliares</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+            @page {
+                size: portrait;
+                margin: 10mm;
+            }
 
-    <!-- BARRA DE FILTROS -->
-    <div class="max-w-6xl mx-auto bg-white p-4 rounded-lg shadow mb-6 border border-gray-200 no-print">
-        <form id="form-filtros" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-            <div>
-                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Ano</label>
-                <input type="number" id="input-ano" value="{{ filtro_ano }}" min="2020" max="2030"
-                       class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Início</label>
-                <select id="select-mes-inicio" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
-                    <option value="1">Jan (01)</option><option value="2">Fev (02)</option><option value="3">Mar (03)</option>
-                    <option value="4">Abr (04)</option><option value="5">Mai (05)</option><option value="6">Jun (06)</option>
-                    <option value="7">Jul (07)</option><option value="8">Ago (08)</option><option value="9">Set (09)</option>
-                    <option value="10">Out (10)</option><option value="11">Nov (11)</option><option value="12">Dez (12)</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Fim</label>
-                <select id="select-mes-fim" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
-                    <option value="1">Jan (01)</option><option value="2">Fev (02)</option><option value="3">Mar (03)</option>
-                    <option value="4">Abr (04)</option><option value="5">Mai (05)</option><option value="6">Jun (06)</option>
-                    <option value="7">Jul (07)</option><option value="8">Ago (08)</option><option value="9">Set (09)</option>
-                    <option value="10">Out (10)</option><option value="11">Nov (11)</option><option value="12">Dez (12)</option>
-                </select>
-            </div>
-            <div class="flex gap-2">
-                <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors shadow">
-                    Atualizar Indicadores
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <!-- FOLHA DO RELATÓRIO -->
-    <div class="max-w-6xl mx-auto bg-white p-10 rounded-lg shadow-md print-shadow-none border border-gray-200">
-        
-        <div class="flex justify-between items-start border-b-2 border-emerald-800 pb-4 mb-6">
-            <div>
-                <span class="text-xs font-extrabold tracking-widest text-emerald-800 uppercase">Sistema Único de Saúde - Atenção Primária</span>
-                <h1 class="text-2xl font-black text-gray-900 mt-1 uppercase tracking-tight">Boletim Analítico de Visitas</h1>
-                <p class="text-sm text-gray-600 mt-1">
-                    Profissional: <strong class="text-gray-900">{{ nome_profissional }}</strong> | 
-                    Período: <span id="lbl-periodo-extenso" class="font-medium text-gray-900">...</span>
-                </p>
-            </div>
-            <button onclick="window.print()" class="no-print bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-4 rounded text-sm inline-flex items-center shadow transition-colors gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                Imprimir PDF
-            </button>
-        </div>
-
-        <div id="loading" class="text-center py-10">
-            <p class="text-emerald-700 font-bold text-base animate-pulse">Analisando produtividade de campo...</p>
-        </div>
-
-        <div id="conteudo-relatorio" style="display: none;">
-            
-            <div class="grid grid-cols-3 gap-4 mb-6">
-                <div class="p-4 bg-emerald-50 border-l-4 border-emerald-600 rounded shadow-sm">
-                    <span class="text-[10px] font-black text-emerald-800 uppercase tracking-widest">Visitas Registradas</span>
-                    <p id="ind-total" class="text-3xl font-black text-gray-900 mt-1">0</p>
-                    <span class="text-[11px] text-gray-500 font-medium">Total de tentativas no território</span>
-                </div>
-                <div class="p-4 bg-teal-50 border-l-4 border-teal-600 rounded shadow-sm">
-                    <span class="text-[10px] font-black text-teal-800 uppercase tracking-widest">Visitas c/ Sucesso</span>
-                    <p id="ind-sucesso" class="text-3xl font-black text-gray-900 mt-1">0</p>
-                    <span class="text-[11px] text-gray-500 font-medium">Famílias/indivíduos abordados</span>
-                </div>
-                <div class="p-4 bg-orange-50 border-l-4 border-orange-500 rounded shadow-sm">
-                    <span class="text-[10px] font-black text-orange-800 uppercase tracking-widest">Perdidas / Recusas</span>
-                    <p id="ind-perda" class="text-3xl font-black text-gray-900 mt-1">0</p>
-                    <span class="text-[11px] text-gray-500 font-medium">Casa fechada ou cidadão recusou</span>
-                </div>
-            </div>
-
-            <!-- 1. Desfechos -->
-            <section class="mb-6 avoid-break">
-                <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200 pb-1 mb-3">1. Efetividade e Desfechos das Visitas</h3>
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-6 items-center bg-gray-50 p-4 rounded border border-gray-100">
-                    <div class="w-full h-48 col-span-2">
-                        <canvas id="graficoDesfechos"></canvas>
-                    </div>
-                    <div class="col-span-3">
-                        <table class="w-full text-xs text-left text-gray-700 border border-gray-200 bg-white">
-                            <thead class="text-[10px] text-gray-500 uppercase bg-gray-100 border-b border-gray-200">
-                                <tr>
-                                    <th class="px-3 py-2">Desfecho Oficial</th>
-                                    <th class="px-3 py-2 text-right">Qtd</th>
-                                    <th class="px-3 py-2 text-right">Taxa (%)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabela-desfechos" class="divide-y divide-gray-100"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 2. Mapeamento e Proporção (Com % agora!) -->
-            <section class="avoid-break">
-                <div class="flex justify-between items-end border-b border-gray-200 pb-1 mb-3">
-                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">2. Mapeamento de Focos e Acompanhamentos</h3>
-                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">% Baseada no Total de Esforço de Campo</span>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="grid-acompanhamentos"></div>
-            </section>
-
-        </div>
-    </div>
-
-    <script>
-    const idProfissional = Number("{{ id_profissional }}");
-    let chartDesfechos = null;
-
-    document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
-    document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";
-
-    // Dicionário com Cores Semânticas
-    const dicionarioCampos = {
-        acomp_gestante: { titulo: "Gestantes", cat: "Ciclos de Vida", color: "fuchsia" },
-        acomp_puerpera: { titulo: "Puérperas", cat: "Ciclos de Vida", color: "fuchsia" },
-        acomp_recem_nascido: { titulo: "Recém-Nascidos", cat: "Ciclos de Vida", color: "fuchsia" },
-        acomp_crianca: { titulo: "Crianças", cat: "Ciclos de Vida", color: "fuchsia" },
-        acomp_pessoa_idosa: { titulo: "Idosos", cat: "Ciclos de Vida", color: "fuchsia" },
-
-        acomp_pessoa_hipertensao: { titulo: "Hipertensos", cat: "Condições Crônicas", color: "red" },
-        acomp_pessoa_diabetes: { titulo: "Diabéticos", cat: "Condições Crônicas", color: "red" },
-        acomp_pessoa_asma: { titulo: "Asma", cat: "Condições Crônicas", color: "red" },
-        acomp_pessoa_dpoc_enfisema: { titulo: "DPOC/Enfisema", cat: "Condições Crônicas", color: "red" },
-        acomp_pessoa_cancer: { titulo: "Câncer", cat: "Condições Crônicas", color: "red" },
-        acomp_pessoa_doenca_cronica: { titulo: "Doenças Crônicas (Outras)", cat: "Condições Crônicas", color: "red" },
-        acomp_pessoa_hanseniase: { titulo: "Hanseníase", cat: "Condições Crônicas", color: "red" },
-        acomp_pessoa_tuberculose: { titulo: "Tuberculose", cat: "Condições Crônicas", color: "red" },
-        acomp_sintomaticos_respirat: { titulo: "Sintomático Respiratório", cat: "Condições Crônicas", color: "red" },
-
-        acomp_tabagista: { titulo: "Tabagistas", cat: "Vulnerabilidades", color: "orange" },
-        acomp_usuario_alcool: { titulo: "Uso de Álcool", cat: "Vulnerabilidades", color: "orange" },
-        acomp_usuario_outras_drogra: { titulo: "Uso de Drogas", cat: "Vulnerabilidades", color: "orange" },
-        acomp_saude_mental: { titulo: "Saúde Mental", cat: "Vulnerabilidades", color: "orange" },
-        acomp_pessoa_desnutricao: { titulo: "Desnutrição", cat: "Vulnerabilidades", color: "orange" },
-        acomp_pessoa_reabil_deficie: { titulo: "Reabilitação/Deficiência", cat: "Vulnerabilidades", color: "orange" },
-        acomp_domiciliados_acamados: { titulo: "Acamados/Domiciliados", cat: "Vulnerabilidades", color: "orange" },
-        acomp_condi_vulnerab_social: { titulo: "Vulnerabilidade Social", cat: "Vulnerabilidades", color: "orange" },
-        acomp_condi_bolsa_familia: { titulo: "Bolsa Família", cat: "Vulnerabilidades", color: "orange" },
-
-        mot_vis_acompanhamento: { titulo: "Acompanhamento no Lar", cat: "Ações de Campo", color: "blue" },
-        mot_vis_visita_periodica: { titulo: "Visita Periódica/Rotina", cat: "Ações de Campo", color: "blue" },
-        mot_vis_orintacao_prevncao: { titulo: "Orientação/Prevenção", cat: "Ações de Campo", color: "blue" },
-        mot_vis_busca_ativa: { titulo: "Busca Ativa (Geral)", cat: "Ações de Campo", color: "blue" },
-        mot_vis_cad_att: { titulo: "Atualização de Cadastro", cat: "Ações de Campo", color: "blue" },
-        mot_vis_convte_atvidd_cltva: { titulo: "Convite p/ Grupos", cat: "Ações de Campo", color: "blue" },
-        mot_vis_egresso_internacao: { titulo: "Egresso de Internação", cat: "Ações de Campo", color: "blue" },
-        mot_vis_outros: { titulo: "Outros Motivos", cat: "Ações de Campo", color: "blue" },
-        visita_compartilhada: { titulo: "Visita Compartilhada", cat: "Ações de Campo", color: "blue" },
-
-        busca_ativa_consulta: { titulo: "Busca p/ Consulta", cat: "Busca Ativa Direcionada", color: "indigo" },
-        busca_ativa_exame: { titulo: "Busca p/ Exame", cat: "Busca Ativa Direcionada", color: "indigo" },
-        busca_ativa_vacina: { titulo: "Busca p/ Vacina", cat: "Busca Ativa Direcionada", color: "indigo" },
-        busca_ativa_bolsa_familia: { titulo: "Busca p/ Condicionalidade", cat: "Busca Ativa Direcionada", color: "indigo" }
-    };
-
-    async function carregarRelatorio() {
-        const ano = document.getElementById('input-ano').value;
-        const mesInicio = document.getElementById('select-mes-inicio').value;
-        const mesFim = document.getElementById('select-mes-fim').value;
-
-        document.getElementById('lbl-periodo-extenso').textContent = `Mês ${mesInicio}/${ano} a ${mesFim}/${ano}`;
-        document.getElementById('loading').style.display = 'block';
-        document.getElementById('conteudo-relatorio').style.display = 'none';
-
-        try {
-            const resp = await fetch(`/api/relatorios/profissionais/${idProfissional}/visitas?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}`);
-            const dados = await resp.json();
-
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('conteudo-relatorio').style.display = 'block';
-
-            // 1. KPIs
-            const totalVisitas = dados.resumo.total_visitas_registradas;
-            document.getElementById('ind-total').textContent = totalVisitas;
-
-            let visitasRealizadas = 0, visitasPerdidas = 0;
-            const labelsDesfechos = [], dadosDesfechos = [], backgroundColors = [];
-            const tbodyDesfechos = document.getElementById('tabela-desfechos');
-            tbodyDesfechos.innerHTML = '';
-
-            dados.desfechos.forEach(item => {
-                labelsDesfechos.push(item.desfecho);
-                dadosDesfechos.push(item.total);
-
-                if (item.desfecho.toLowerCase().includes("realizada")) {
-                    visitasRealizadas += item.total;
-                    backgroundColors.push('#10b981'); 
-                } else {
-                    visitasPerdidas += item.total;
-                    backgroundColors.push(item.desfecho.toLowerCase().includes("ausente") ? '#f97316' : '#ef4444'); 
+            @media print {
+                body {
+                    background-color: white !important;
+                    padding: 0 !important;
                 }
 
-                const pct = totalVisitas > 0 ? ((item.total / totalVisitas) * 100).toFixed(1) : 0;
-                tbodyDesfechos.innerHTML += `
+                .no-print {
+                    display: none !important;
+                }
+
+                .print-shadow-none {
+                    box-shadow: none !important;
+                    border: none !important;
+                    padding: 0 !important;
+                }
+
+                .avoid-break {
+                    page-break-inside: avoid;
+                }
+            }
+        </style>
+    </head>
+    <body class="bg-gray-100 p-6 font-sans text-gray-800">
+        <!-- BARRA DE FILTROS -->
+        <div class="max-w-6xl mx-auto bg-white p-4 rounded-lg shadow mb-6 border border-gray-200 no-print">
+            <form id="form-filtros"
+                  class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Ano</label>
+                    <input type="number"
+                           id="input-ano"
+                           value="{{ filtro_ano }}"
+                           min="2020"
+                           max="2030"
+                           class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Início</label>
+                    <select id="select-mes-inicio"
+                            class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
+                        <option value="1">Jan (01)</option>
+                        <option value="2">Fev (02)</option>
+                        <option value="3">Mar (03)</option>
+                        <option value="4">Abr (04)</option>
+                        <option value="5">Mai (05)</option>
+                        <option value="6">Jun (06)</option>
+                        <option value="7">Jul (07)</option>
+                        <option value="8">Ago (08)</option>
+                        <option value="9">Set (09)</option>
+                        <option value="10">Out (10)</option>
+                        <option value="11">Nov (11)</option>
+                        <option value="12">Dez (12)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Fim</label>
+                    <select id="select-mes-fim"
+                            class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500">
+                        <option value="1">Jan (01)</option>
+                        <option value="2">Fev (02)</option>
+                        <option value="3">Mar (03)</option>
+                        <option value="4">Abr (04)</option>
+                        <option value="5">Mai (05)</option>
+                        <option value="6">Jun (06)</option>
+                        <option value="7">Jul (07)</option>
+                        <option value="8">Ago (08)</option>
+                        <option value="9">Set (09)</option>
+                        <option value="10">Out (10)</option>
+                        <option value="11">Nov (11)</option>
+                        <option value="12">Dez (12)</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit"
+                            class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors shadow">
+                        Atualizar Indicadores
+                    </button>
+                </div>
+            </form>
+        </div>
+        <!-- FOLHA DO RELATÓRIO -->
+        <div class="max-w-6xl mx-auto bg-white p-10 rounded-lg shadow-md print-shadow-none border border-gray-200">
+            <div class="flex justify-between items-start border-b-2 border-emerald-800 pb-4 mb-6">
+                <div>
+                    <span class="text-xs font-extrabold tracking-widest text-emerald-800 uppercase">Sistema Único de Saúde - Atenção Primária</span>
+                    <h1 class="text-2xl font-black text-gray-900 mt-1 uppercase tracking-tight">Boletim Analítico de Visitas</h1>
+                    <p class="text-sm text-gray-600 mt-1">
+                        Profissional: <strong class="text-gray-900">{{ nome_profissional }}</strong> |
+                        Período: <span id="lbl-periodo-extenso" class="font-medium text-gray-900">...</span>
+                    </p>
+                </div>
+                <button type="button"
+                        onclick="window.print()"
+                        class="no-print bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-4 rounded text-sm inline-flex items-center shadow transition-colors gap-2">
+                    <svg class="w-4 h-4"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z">
+                        </path>
+                    </svg>
+                    Imprimir PDF
+                </button>
+            </div>
+            <div id="loading" class="text-center py-10">
+                <p class="text-emerald-700 font-bold text-base animate-pulse">Analisando produtividade de campo...</p>
+            </div>
+            <div id="conteudo-relatorio" style="display: none;">
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="p-4 bg-emerald-50 border-l-4 border-emerald-600 rounded shadow-sm">
+                        <span class="text-[10px] font-black text-emerald-800 uppercase tracking-widest">Visitas Registradas</span>
+                        <p id="ind-total" class="text-3xl font-black text-gray-900 mt-1">0</p>
+                        <span class="text-[11px] text-gray-500 font-medium">Total de tentativas no território</span>
+                    </div>
+                    <div class="p-4 bg-teal-50 border-l-4 border-teal-600 rounded shadow-sm">
+                        <span class="text-[10px] font-black text-teal-800 uppercase tracking-widest">Visitas c/ Sucesso</span>
+                        <p id="ind-sucesso" class="text-3xl font-black text-gray-900 mt-1">0</p>
+                        <span class="text-[11px] text-gray-500 font-medium">Famílias/indivíduos abordados</span>
+                    </div>
+                    <div class="p-4 bg-orange-50 border-l-4 border-orange-500 rounded shadow-sm">
+                        <span class="text-[10px] font-black text-orange-800 uppercase tracking-widest">Perdidas / Recusas</span>
+                        <p id="ind-perda" class="text-3xl font-black text-gray-900 mt-1">0</p>
+                        <span class="text-[11px] text-gray-500 font-medium">Casa fechada ou cidadão recusou</span>
+                    </div>
+                </div>
+                <!-- 1. Desfechos -->
+                <section class="mb-6 avoid-break">
+                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider border-b border-gray-200 pb-1 mb-3">1. Efetividade e Desfechos das Visitas</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-6 items-center bg-gray-50 p-4 rounded border border-gray-100">
+                        <div class="w-full h-48 col-span-2">
+                            <canvas id="graficoDesfechos"></canvas>
+                        </div>
+                        <div class="col-span-3">
+                            <table class="w-full text-xs text-left text-gray-700 border border-gray-200 bg-white">
+                                <thead class="text-[10px] text-gray-500 uppercase bg-gray-100 border-b border-gray-200">
+                                    <tr>
+                                        <th class="px-3 py-2">Desfecho Oficial</th>
+                                        <th class="px-3 py-2 text-right">Qtd</th>
+                                        <th class="px-3 py-2 text-right">Taxa (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-desfechos" class="divide-y divide-gray-100">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+                <!-- 2. Mapeamento e Proporção (Com % agora!) -->
+                <section class="avoid-break">
+                    <div class="flex justify-between items-end border-b border-gray-200 pb-1 mb-3">
+                        <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">2. Mapeamento de Focos e Acompanhamentos</h3>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">% Baseada no Total de Esforço de Campo</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+                         id="grid-acompanhamentos"></div>
+                </section>
+            </div>
+        </div>
+        <script>
+            const idProfissional = Number("{{ id_profissional }}");
+            let chartDesfechos = null;
+
+            document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
+            document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";
+
+            // Dicionário com Cores Semânticas
+            const dicionarioCampos = {
+                acomp_gestante: {
+                    titulo: "Gestantes",
+                    cat: "Ciclos de Vida",
+                    color: "fuchsia"
+                },
+                acomp_puerpera: {
+                    titulo: "Puérperas",
+                    cat: "Ciclos de Vida",
+                    color: "fuchsia"
+                },
+                acomp_recem_nascido: {
+                    titulo: "Recém-Nascidos",
+                    cat: "Ciclos de Vida",
+                    color: "fuchsia"
+                },
+                acomp_crianca: {
+                    titulo: "Crianças",
+                    cat: "Ciclos de Vida",
+                    color: "fuchsia"
+                },
+                acomp_pessoa_idosa: {
+                    titulo: "Idosos",
+                    cat: "Ciclos de Vida",
+                    color: "fuchsia"
+                },
+
+                acomp_pessoa_hipertensao: {
+                    titulo: "Hipertensos",
+                    cat: "Condições Crônicas",
+                    color: "red"
+                },
+                acomp_pessoa_diabetes: {
+                    titulo: "Diabéticos",
+                    cat: "Condições Crônicas",
+                    color: "red"
+                },
+                acomp_pessoa_asma: {
+                    titulo: "Asma",
+                    cat: "Condições Crônicas",
+                    color: "red"
+                },
+                acomp_pessoa_dpoc_enfisema: {
+                    titulo: "DPOC/Enfisema",
+                    cat: "Condições Crônicas",
+                    color: "red"
+                },
+                acomp_pessoa_cancer: {
+                    titulo: "Câncer",
+                    cat: "Condições Crônicas",
+                    color: "red"
+                },
+                acomp_pessoa_doenca_cronica: {
+                    titulo: "Doenças Crônicas (Outras)",
+                    cat: "Condições Crônicas",
+                    color: "red"
+                },
+                acomp_pessoa_hanseniase: {
+                    titulo: "Hanseníase",
+                    cat: "Condições Crônicas",
+                    color: "red"
+                },
+                acomp_pessoa_tuberculose: {
+                    titulo: "Tuberculose",
+                    cat: "Condições Crônicas",
+                    color: "red"
+                },
+                acomp_sintomaticos_respirat: {
+                    titulo: "Sintomático Respiratório",
+                    cat: "Condições Crônicas",
+                    color: "red"
+                },
+
+                acomp_tabagista: {
+                    titulo: "Tabagistas",
+                    cat: "Vulnerabilidades",
+                    color: "orange"
+                },
+                acomp_usuario_alcool: {
+                    titulo: "Uso de Álcool",
+                    cat: "Vulnerabilidades",
+                    color: "orange"
+                },
+                acomp_usuario_outras_drogra: {
+                    titulo: "Uso de Drogas",
+                    cat: "Vulnerabilidades",
+                    color: "orange"
+                },
+                acomp_saude_mental: {
+                    titulo: "Saúde Mental",
+                    cat: "Vulnerabilidades",
+                    color: "orange"
+                },
+                acomp_pessoa_desnutricao: {
+                    titulo: "Desnutrição",
+                    cat: "Vulnerabilidades",
+                    color: "orange"
+                },
+                acomp_pessoa_reabil_deficie: {
+                    titulo: "Reabilitação/Deficiência",
+                    cat: "Vulnerabilidades",
+                    color: "orange"
+                },
+                acomp_domiciliados_acamados: {
+                    titulo: "Acamados/Domiciliados",
+                    cat: "Vulnerabilidades",
+                    color: "orange"
+                },
+                acomp_condi_vulnerab_social: {
+                    titulo: "Vulnerabilidade Social",
+                    cat: "Vulnerabilidades",
+                    color: "orange"
+                },
+                acomp_condi_bolsa_familia: {
+                    titulo: "Bolsa Família",
+                    cat: "Vulnerabilidades",
+                    color: "orange"
+                },
+
+                mot_vis_acompanhamento: {
+                    titulo: "Acompanhamento no Lar",
+                    cat: "Ações de Campo",
+                    color: "blue"
+                },
+                mot_vis_visita_periodica: {
+                    titulo: "Visita Periódica/Rotina",
+                    cat: "Ações de Campo",
+                    color: "blue"
+                },
+                mot_vis_orintacao_prevncao: {
+                    titulo: "Orientação/Prevenção",
+                    cat: "Ações de Campo",
+                    color: "blue"
+                },
+                mot_vis_busca_ativa: {
+                    titulo: "Busca Ativa (Geral)",
+                    cat: "Ações de Campo",
+                    color: "blue"
+                },
+                mot_vis_cad_att: {
+                    titulo: "Atualização de Cadastro",
+                    cat: "Ações de Campo",
+                    color: "blue"
+                },
+                mot_vis_convte_atvidd_cltva: {
+                    titulo: "Convite p/ Grupos",
+                    cat: "Ações de Campo",
+                    color: "blue"
+                },
+                mot_vis_egresso_internacao: {
+                    titulo: "Egresso de Internação",
+                    cat: "Ações de Campo",
+                    color: "blue"
+                },
+                mot_vis_outros: {
+                    titulo: "Outros Motivos",
+                    cat: "Ações de Campo",
+                    color: "blue"
+                },
+                visita_compartilhada: {
+                    titulo: "Visita Compartilhada",
+                    cat: "Ações de Campo",
+                    color: "blue"
+                },
+
+                busca_ativa_consulta: {
+                    titulo: "Busca p/ Consulta",
+                    cat: "Busca Ativa Direcionada",
+                    color: "indigo"
+                },
+                busca_ativa_exame: {
+                    titulo: "Busca p/ Exame",
+                    cat: "Busca Ativa Direcionada",
+                    color: "indigo"
+                },
+                busca_ativa_vacina: {
+                    titulo: "Busca p/ Vacina",
+                    cat: "Busca Ativa Direcionada",
+                    color: "indigo"
+                },
+                busca_ativa_bolsa_familia: {
+                    titulo: "Busca p/ Condicionalidade",
+                    cat: "Busca Ativa Direcionada",
+                    color: "indigo"
+                }
+            };
+
+            async function carregarRelatorio() {
+                const ano = document.getElementById('input-ano').value;
+                const mesInicio = document.getElementById('select-mes-inicio').value;
+                const mesFim = document.getElementById('select-mes-fim').value;
+
+                document.getElementById('lbl-periodo-extenso').textContent = `Mês ${mesInicio}/${ano} a ${mesFim}/${ano}`;
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('conteudo-relatorio').style.display = 'none';
+
+                try {
+                    const resp = await fetch(`/api/relatorios/profissionais/${idProfissional}/visitas?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}`);
+                    const dados = await resp.json();
+
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('conteudo-relatorio').style.display = 'block';
+
+                    // 1. KPIs
+                    const totalVisitas = dados.resumo.total_visitas_registradas;
+                    document.getElementById('ind-total').textContent = totalVisitas;
+
+                    let visitasRealizadas = 0,
+                        visitasPerdidas = 0;
+                    const labelsDesfechos = [],
+                        dadosDesfechos = [],
+                        backgroundColors = [];
+                    const tbodyDesfechos = document.getElementById('tabela-desfechos');
+                    tbodyDesfechos.innerHTML = '';
+
+                    dados.desfechos.forEach(item => {
+                        labelsDesfechos.push(item.desfecho);
+                        dadosDesfechos.push(item.total);
+
+                        if (item.desfecho.toLowerCase().includes("realizada")) {
+                            visitasRealizadas += item.total;
+                            backgroundColors.push('#10b981');
+                        } else {
+                            visitasPerdidas += item.total;
+                            backgroundColors.push(item.desfecho.toLowerCase().includes("ausente") ? '#f97316' : '#ef4444');
+                        }
+
+                        const pct = totalVisitas > 0 ? ((item.total / totalVisitas) * 100).toFixed(1) : 0;
+                        tbodyDesfechos.innerHTML += `
                     <tr>
                         <td class="px-3 py-2 font-medium">${item.desfecho}</td>
                         <td class="px-3 py-2 text-right font-bold text-gray-900">${item.total}</td>
                         <td class="px-3 py-2 text-right text-gray-500">${pct}%</td>
                     </tr>
                 `;
-            });
+                    });
 
-            document.getElementById('ind-sucesso').textContent = visitasRealizadas;
-            document.getElementById('ind-perda').textContent = visitasPerdidas;
+                    document.getElementById('ind-sucesso').textContent = visitasRealizadas;
+                    document.getElementById('ind-perda').textContent = visitasPerdidas;
 
-            if (chartDesfechos) chartDesfechos.destroy();
-            chartDesfechos = new Chart(document.getElementById('graficoDesfechos').getContext('2d'), {
-                type: 'doughnut',
-                data: { labels: labelsDesfechos, datasets: [{ data: dadosDesfechos, backgroundColor: backgroundColors, borderWidth: 1 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } } } }
-            });
+                    if (chartDesfechos) chartDesfechos.destroy();
+                    chartDesfechos = new Chart(document.getElementById('graficoDesfechos').getContext('2d'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: labelsDesfechos,
+                            datasets: [{
+                                data: dadosDesfechos,
+                                backgroundColor: backgroundColors,
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                    labels: {
+                                        boxWidth: 12,
+                                        font: {
+                                            size: 10
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
 
-            // 2. Mapeamento com Porcentagem
-            const containerMotivos = document.getElementById('grid-acompanhamentos');
-            containerMotivos.innerHTML = '';
+                    // 2. Mapeamento com Porcentagem
+                    const containerMotivos = document.getElementById('grid-acompanhamentos');
+                    containerMotivos.innerHTML = '';
 
-            const categorias = {};
-            Object.entries(dados.motivos_e_acompanhamentos).forEach(([campo, qtd]) => {
-                if (qtd > 0) {
-                    const info = dicionarioCampos[campo] || { titulo: campo, cat: "Outros", color: "gray" };
-                    if (!categorias[info.cat]) categorias[info.cat] = { color: info.color, itens: [] };
-                    categorias[info.cat].itens.push({ nome: info.titulo, total: qtd });
-                }
-            });
+                    const categorias = {};
+                    Object.entries(dados.motivos_e_acompanhamentos).forEach(([campo, qtd]) => {
+                        if (qtd > 0) {
+                            const info = dicionarioCampos[campo] || {
+                                titulo: campo,
+                                cat: "Outros",
+                                color: "gray"
+                            };
+                            if (!categorias[info.cat]) categorias[info.cat] = {
+                                color: info.color,
+                                itens: []
+                            };
+                            categorias[info.cat].itens.push({
+                                nome: info.titulo,
+                                total: qtd
+                            });
+                        }
+                    });
 
-            Object.entries(categorias).forEach(([nomeCat, dataCat]) => {
-                let linhasItens = '';
-                dataCat.itens.sort((a, b) => b.total - a.total).forEach(i => {
-                    
-                    // Cálculo da Percentagem Relativa ao Esforço de Campo
-                    const pctVisitas = totalVisitas > 0 ? ((i.total / totalVisitas) * 100).toFixed(1) : "0.0";
-                    
-                    // O segredo do alinhamento: w-12 (48px) para % e w-10 (40px) para o Total, forçando formato de coluna de tabela
-                    linhasItens += `
+                    Object.entries(categorias).forEach(([nomeCat, dataCat]) => {
+                        let linhasItens = '';
+                        dataCat.itens.sort((a, b) => b.total - a.total).forEach(i => {
+
+                            // Cálculo da Percentagem Relativa ao Esforço de Campo
+                            const pctVisitas = totalVisitas > 0 ? ((i.total / totalVisitas) * 100).toFixed(1) : "0.0";
+
+                            // O segredo do alinhamento: w-12 (48px) para % e w-10 (40px) para o Total, forçando formato de coluna de tabela
+                            linhasItens += `
                         <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
                             <span class="text-xs text-gray-700 truncate flex-1 pr-2" title="${i.nome}">${i.nome}</span>
                             <div class="flex items-center gap-2 shrink-0">
@@ -266,24 +487,27 @@
                             </div>
                         </div>
                     `;
-                });
+                        });
 
-                containerMotivos.innerHTML += `
+                        containerMotivos.innerHTML += `
                     <div class="bg-white border-t-4 border-${dataCat.color}-500 rounded shadow-sm border border-gray-200 p-3 avoid-break hover:shadow-md transition-shadow">
                         <h4 class="text-[10px] font-black text-${dataCat.color}-800 uppercase tracking-widest mb-3">${nomeCat}</h4>
                         <div class="flex flex-col">${linhasItens}</div>
                     </div>
                 `;
+                    });
+
+                } catch (err) {
+                    console.error(err);
+                    document.getElementById('loading').innerHTML = `<p class="text-red-600 font-bold">Erro ao carregar dados do profissional.</p>`;
+                }
+            }
+
+            document.getElementById('form-filtros').addEventListener('submit', (e) => {
+                e.preventDefault();
+                carregarRelatorio();
             });
-
-        } catch (err) {
-            console.error(err);
-            document.getElementById('loading').innerHTML = `<p class="text-red-600 font-bold">Erro ao carregar dados do profissional.</p>`;
-        }
-    }
-
-    document.getElementById('form-filtros').addEventListener('submit', (e) => { e.preventDefault(); carregarRelatorio(); });
-    document.addEventListener('DOMContentLoaded', carregarRelatorio);
-</script>
-</body>
+            document.addEventListener('DOMContentLoaded', carregarRelatorio);
+        </script>
+    </body>
 </html>

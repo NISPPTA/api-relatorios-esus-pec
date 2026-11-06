@@ -1,198 +1,277 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acompanhamento Territorial e Cadastros</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @page { size: portrait; margin: 12mm; }
-        @media print {
-            body { background-color: white !important; padding: 0 !important; }
-            .no-print { display: none !important; }
-            .print-shadow-none { box-shadow: none !important; border: none !important; padding: 0 !important; }
-            .avoid-break { page-break-inside: avoid; }
-        }
-    </style>
-</head>
-<body class="bg-gray-100 p-6 font-sans text-gray-800">
-
-    <!-- Barra de Filtros (Não-Imprimível) -->
-    <div class="max-w-6xl mx-auto bg-white p-4 rounded-lg shadow mb-6 border border-gray-200 no-print">
-        <form id="form-filtros" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-            <div>
-                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Ano</label>
-                <input type="number" id="input-ano" value="{{ filtro_ano }}" min="2020" max="2030"
-                       class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Início</label>
-                <select id="select-mes-inicio" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
-                    <option value="1">Jan (01)</option><option value="2">Fev (02)</option><option value="3">Mar (03)</option>
-                    <option value="4">Abr (04)</option><option value="5">Mai (05)</option><option value="6">Jun (06)</option>
-                    <option value="7">Jul (07)</option><option value="8">Ago (08)</option><option value="9">Set (09)</option>
-                    <option value="10">Out (10)</option><option value="11">Nov (11)</option><option value="12">Dez (12)</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Fim</label>
-                <select id="select-mes-fim" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
-                    <option value="1">Jan (01)</option><option value="2">Fev (02)</option><option value="3">Mar (03)</option>
-                    <option value="4">Abr (04)</option><option value="5">Mai (05)</option><option value="6">Jun (06)</option>
-                    <option value="7">Jul (07)</option><option value="8">Ago (08)</option><option value="9">Set (09)</option>
-                    <option value="10">Out (10)</option><option value="11">Nov (11)</option><option value="12">Dez (12)</option>
-                </select>
-            </div>
-            <div class="flex gap-2">
-                <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors shadow">
-                    Atualizar Indicadores
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <!-- Conteúdo do Relatório -->
-    <div class="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-md print-shadow-none border border-gray-200">
-        
-        <!-- Cabeçalho Oficial SUS -->
-        <div class="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">
-            <div>
-                <span class="text-xs font-extrabold tracking-widest text-blue-800 uppercase">Sistema Único de Saúde - Atenção Primária</span>
-                <h1 class="text-2xl font-black text-gray-900 mt-1 uppercase tracking-tight">Diagnóstico do Território</h1>
-                <p class="text-sm text-gray-600 mt-1">
-                    Profissional: <strong class="text-gray-900">{{ nome_profissional }}</strong> | 
-                    Período: <span id="lbl-periodo" class="font-medium text-gray-900">...</span>
-                </p>
-            </div>
-            <button onclick="window.print()" class="no-print bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded text-sm inline-flex items-center shadow transition-colors gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                Imprimir PDF
-            </button>
-        </div>
-
-        <div id="loading" class="text-center py-10">
-            <p class="text-blue-700 font-bold text-base animate-pulse">Consolidando base territorial de cadastros...</p>
-        </div>
-
-        <div id="conteudo-relatorio" style="display: none;">
-            
-            <!-- 1. KPIs Gerais do Território -->
-            <div class="grid grid-cols-2 md:grid-cols-4 print:grid-cols-4 gap-4 mb-6">
-                <div class="p-3 bg-indigo-50 border-l-4 border-indigo-600 rounded shadow-sm">
-                    <span class="text-[10px] font-black text-indigo-800 uppercase tracking-widest">Cidadãos Cadastrados</span>
-                    <p id="kpi-cidadaos" class="text-2xl font-black text-gray-900 mt-1">0</p>
-                    <span class="text-[10px] text-gray-500 font-medium">Base total adscrita</span>
-                </div>
-                <div class="p-3 bg-teal-50 border-l-4 border-teal-600 rounded shadow-sm">
-                    <span class="text-[10px] font-black text-teal-800 uppercase tracking-widest">Domicílios Registrados</span>
-                    <p id="kpi-domicilios" class="text-2xl font-black text-gray-900 mt-1">0</p>
-                    <span class="text-[10px] text-gray-500 font-medium">Imóveis mapeados</span>
-                </div>
-                <div class="p-3 bg-blue-50 border-l-4 border-blue-600 rounded shadow-sm">
-                    <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Chefes de Família</span>
-                    <p id="kpi-responsaveis" class="text-2xl font-black text-gray-900 mt-1">0</p>
-                    <span class="text-[10px] text-gray-500 font-medium">Responsáveis designados</span>
-                </div>
-                <div class="p-3 bg-slate-50 border-l-4 border-slate-600 rounded shadow-sm">
-                    <span class="text-[10px] font-black text-slate-800 uppercase tracking-widest">Média Morador/Casa</span>
-                    <p id="kpi-densidade" class="text-2xl font-black text-gray-900 mt-1">0.0</p>
-                    <span class="text-[10px] text-gray-500 font-medium">Densidade habitacional</span>
-                </div>
-            </div>
-
-            <!-- 2. Condições Crônicas e Riscos Clínicos -->
-            <section class="mb-6 avoid-break">
-                <div class="flex items-center gap-2 border-b border-gray-300 pb-1 mb-3">
-                    <h3 class="text-sm font-black text-gray-800 uppercase tracking-wide">
-                        1. Vigilância Clínica e Riscos
-                    </h3>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 print:grid-cols-5 gap-3" id="grid-cronicos"></div>
-            </section>
-
-            <!-- 3. Vulnerabilidades, Hábitos e Saúde Mental -->
-            <section class="mb-6 avoid-break">
-                <div class="flex items-center gap-2 border-b border-gray-300 pb-1 mb-3">
-                    <h3 class="text-sm font-black text-gray-800 uppercase tracking-wide">
-                        2. Vulnerabilidades e Atenção Psicossocial
-                    </h3>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 print:grid-cols-5 gap-3" id="grid-vulnerabilidades"></div>
-            </section>
-
-            <!-- 4. Condições de Moradia e Zoonótica -->
-            <section class="avoid-break">
-                <div class="flex items-center gap-2 border-b border-gray-300 pb-1 mb-3">
-                    <h3 class="text-sm font-black text-gray-800 uppercase tracking-wide">
-                        3. Habitação e Vigilância Zoonótica
-                    </h3>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 print:grid-cols-5 gap-3" id="grid-domiciliar"></div>
-            </section>
-
-        </div>
-    </div>
-
-    <script>
-        const idProfissional = Number("{{ id_profissional }}");
-
-        document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
-        document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";
-
-        const svgsDeSeguranca = {
-            coracao: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>`,
-            gota: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2.252A8.014 8.014 0 0117.723 9c0 3.866-5.723 12.748-5.723 12.748S6.277 12.866 6.277 9A8.014 8.014 0 0112 2.252z"></path></svg>`,
-            alerta: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
-            gestante: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm-3.5 4.5a3.5 3.5 0 017 0v2a5 5 0 01-1 3v6h-4v-6a5 5 0 01-1-3v-2z"></path></svg>`,
-            cerebro: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"></path></svg>`,
-            cigarro: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16h16M4 12h16m-4-8a2 2 0 012 2v2M8 4a2 2 0 012 2v2m-6 4v8a2 2 0 002 2h12a2 2 0 002-2v-8"></path></svg>`,
-            acessivel: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM5 14h6.5l2.5 5.5m0 0H8.5m5.5 0V15"></path></svg>`,
-            casa: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"></path></svg>`,
-            raio: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"></path></svg>`,
-            pata: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="7" cy="8" r="2"></circle><circle cx="17" cy="8" r="2"></circle><circle cx="12" cy="5" r="2"></circle><path d="M12 11c-3 0-5 2-5 5 0 2 2 3 5 3s5-1 5-3c0-3-2-5-5-5z"></path></svg>`,
-            lupa: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"></path></svg>`
-        };
-
-        window.svgsDeSeguranca = svgsDeSeguranca;
-        function obterIconeSeguro(chaveSvg, urlExterna) {
-            return `<img src="${urlExterna}" class="w-6 h-6 object-contain drop-shadow-sm" alt="${chaveSvg}" onerror="this.outerHTML = window.svgsDeSeguranca['${chaveSvg}']">`;
-        }
-
-        const icons = {
-            coracao: obterIconeSeguro('coracao', 'https://cdn-icons-png.flaticon.com/512/833/833472.png'),
-            gota: obterIconeSeguro('gota', 'https://cdn-icons-png.flaticon.com/512/4228/4228719.png'),
-            alerta: obterIconeSeguro('alerta', 'https://cdn-icons-png.flaticon.com/512/1076/1076337.png'),
-            gestante: obterIconeSeguro('gestante', 'https://cdn-icons-png.flaticon.com/512/2965/2965709.png'),
-            cerebro: obterIconeSeguro('cerebro', 'https://cdn-icons-png.flaticon.com/512/2806/2806652.png'),
-            cigarro: obterIconeSeguro('cigarro', 'https://cdn-icons-png.flaticon.com/512/2610/2610115.png'),
-            acessivel: obterIconeSeguro('acessivel', 'https://cdn-icons-png.flaticon.com/512/3773/3773099.png'),
-            casa: obterIconeSeguro('casa', 'https://cdn-icons-png.flaticon.com/512/619/619034.png'),
-            raio: obterIconeSeguro('raio', 'https://cdn-icons-png.flaticon.com/512/3050/3050114.png'),
-            pata: obterIconeSeguro('pata', 'https://cdn-icons-png.flaticon.com/512/2138/2138241.png'),
-            lupa: obterIconeSeguro('lupa', 'https://cdn-icons-png.flaticon.com/512/3858/3858064.png')
-        };
-
-        const temas = {
-            red: { bg: "bg-red-50", border: "border-red-200", iconBg: "bg-red-100", iconText: "text-red-700", pctBg: "bg-red-200", pctText: "text-red-900" },
-            orange: { bg: "bg-orange-50", border: "border-orange-200", iconBg: "bg-orange-100", iconText: "text-orange-700", pctBg: "bg-orange-200", pctText: "text-orange-900" },
-            blue: { bg: "bg-blue-50", border: "border-blue-200", iconBg: "bg-blue-100", iconText: "text-blue-700", pctBg: "bg-blue-200", pctText: "text-blue-900" },
-            teal: { bg: "bg-teal-50", border: "border-teal-200", iconBg: "bg-teal-100", iconText: "text-teal-700", pctBg: "bg-teal-200", pctText: "text-teal-900" },
-            pink: { bg: "bg-fuchsia-50", border: "border-fuchsia-200", iconBg: "bg-fuchsia-100", iconText: "text-fuchsia-700", pctBg: "bg-fuchsia-200", pctText: "text-fuchsia-900" }
-        };
-
-        function criarCard(label, valor, iconSvg, corKey, valTotalRef = 0, hideIfZero = false) {
-            if (hideIfZero && (valor === 0 || valor === "0" || valor === "0.0")) return "";
-
-            const t = temas[corKey] || temas.blue;
-            let pctHtml = '';
-            
-            // O cálculo da percentagem relativa foi ativado para todos que enviarem valTotalRef
-            if (valTotalRef > 0) {
-                const pct = ((valor / valTotalRef) * 100).toFixed(1);
-                pctHtml = `<span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded ${t.pctBg} ${t.pctText}">${pct}%</span>`;
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Acompanhamento Territorial e Cadastros</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            @page {
+                size: portrait;
+                margin: 12mm;
             }
 
-            return `
+            @media print {
+                body {
+                    background-color: white !important;
+                    padding: 0 !important;
+                }
+
+                .no-print {
+                    display: none !important;
+                }
+
+                .print-shadow-none {
+                    box-shadow: none !important;
+                    border: none !important;
+                    padding: 0 !important;
+                }
+
+                .avoid-break {
+                    page-break-inside: avoid;
+                }
+            }
+        </style>
+    </head>
+    <body class="bg-gray-100 p-6 font-sans text-gray-800">
+        <!-- Barra de Filtros (Não-Imprimível) -->
+        <div class="max-w-6xl mx-auto bg-white p-4 rounded-lg shadow mb-6 border border-gray-200 no-print">
+            <form id="form-filtros"
+                  class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Ano</label>
+                    <input type="number"
+                           id="input-ano"
+                           value="{{ filtro_ano }}"
+                           min="2020"
+                           max="2030"
+                           class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Início</label>
+                    <select id="select-mes-inicio"
+                            class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
+                        <option value="1">Jan (01)</option>
+                        <option value="2">Fev (02)</option>
+                        <option value="3">Mar (03)</option>
+                        <option value="4">Abr (04)</option>
+                        <option value="5">Mai (05)</option>
+                        <option value="6">Jun (06)</option>
+                        <option value="7">Jul (07)</option>
+                        <option value="8">Ago (08)</option>
+                        <option value="9">Set (09)</option>
+                        <option value="10">Out (10)</option>
+                        <option value="11">Nov (11)</option>
+                        <option value="12">Dez (12)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mês Fim</label>
+                    <select id="select-mes-fim"
+                            class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500">
+                        <option value="1">Jan (01)</option>
+                        <option value="2">Fev (02)</option>
+                        <option value="3">Mar (03)</option>
+                        <option value="4">Abr (04)</option>
+                        <option value="5">Mai (05)</option>
+                        <option value="6">Jun (06)</option>
+                        <option value="7">Jul (07)</option>
+                        <option value="8">Ago (08)</option>
+                        <option value="9">Set (09)</option>
+                        <option value="10">Out (10)</option>
+                        <option value="11">Nov (11)</option>
+                        <option value="12">Dez (12)</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit"
+                            class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-1.5 px-3 rounded text-sm transition-colors shadow">
+                        Atualizar Indicadores
+                    </button>
+                </div>
+            </form>
+        </div>
+        <!-- Conteúdo do Relatório -->
+        <div class="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow-md print-shadow-none border border-gray-200">
+            <!-- Cabeçalho Oficial SUS -->
+            <div class="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">
+                <div>
+                    <span class="text-xs font-extrabold tracking-widest text-blue-800 uppercase">Sistema Único de Saúde - Atenção Primária</span>
+                    <h1 class="text-2xl font-black text-gray-900 mt-1 uppercase tracking-tight">Diagnóstico do Território</h1>
+                    <p class="text-sm text-gray-600 mt-1">
+                        Profissional: <strong class="text-gray-900">{{ nome_profissional }}</strong> |
+                        Período: <span id="lbl-periodo" class="font-medium text-gray-900">...</span>
+                    </p>
+                </div>
+                <button type="button"
+                        onclick="window.print()"
+                        class="no-print bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded text-sm inline-flex items-center shadow transition-colors gap-2">
+                    <svg class="w-4 h-4"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z">
+                        </path>
+                    </svg>
+                    Imprimir PDF
+                </button>
+            </div>
+            <div id="loading" class="text-center py-10">
+                <p class="text-blue-700 font-bold text-base animate-pulse">Consolidando base territorial de cadastros...</p>
+            </div>
+            <div id="conteudo-relatorio" style="display: none;">
+                <!-- 1. KPIs Gerais do Território -->
+                <div class="grid grid-cols-2 md:grid-cols-4 print:grid-cols-4 gap-4 mb-6">
+                    <div class="p-3 bg-indigo-50 border-l-4 border-indigo-600 rounded shadow-sm">
+                        <span class="text-[10px] font-black text-indigo-800 uppercase tracking-widest">Cidadãos Cadastrados</span>
+                        <p id="kpi-cidadaos" class="text-2xl font-black text-gray-900 mt-1">0</p>
+                        <span class="text-[10px] text-gray-500 font-medium">Base total adscrita</span>
+                    </div>
+                    <div class="p-3 bg-teal-50 border-l-4 border-teal-600 rounded shadow-sm">
+                        <span class="text-[10px] font-black text-teal-800 uppercase tracking-widest">Domicílios Registrados</span>
+                        <p id="kpi-domicilios" class="text-2xl font-black text-gray-900 mt-1">0</p>
+                        <span class="text-[10px] text-gray-500 font-medium">Imóveis mapeados</span>
+                    </div>
+                    <div class="p-3 bg-blue-50 border-l-4 border-blue-600 rounded shadow-sm">
+                        <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Chefes de Família</span>
+                        <p id="kpi-responsaveis" class="text-2xl font-black text-gray-900 mt-1">0</p>
+                        <span class="text-[10px] text-gray-500 font-medium">Responsáveis designados</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 border-l-4 border-slate-600 rounded shadow-sm">
+                        <span class="text-[10px] font-black text-slate-800 uppercase tracking-widest">Média Morador/Casa</span>
+                        <p id="kpi-densidade" class="text-2xl font-black text-gray-900 mt-1">0.0</p>
+                        <span class="text-[10px] text-gray-500 font-medium">Densidade habitacional</span>
+                    </div>
+                </div>
+                <!-- 2. Condições Crônicas e Riscos Clínicos -->
+                <section class="mb-6 avoid-break">
+                    <div class="flex items-center gap-2 border-b border-gray-300 pb-1 mb-3">
+                        <h3 class="text-sm font-black text-gray-800 uppercase tracking-wide">
+                            1. Vigilância Clínica e Riscos
+                        </h3>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 print:grid-cols-5 gap-3"
+                         id="grid-cronicos"></div>
+                </section>
+                <!-- 3. Vulnerabilidades, Hábitos e Saúde Mental -->
+                <section class="mb-6 avoid-break">
+                    <div class="flex items-center gap-2 border-b border-gray-300 pb-1 mb-3">
+                        <h3 class="text-sm font-black text-gray-800 uppercase tracking-wide">
+                            2. Vulnerabilidades e Atenção Psicossocial
+                        </h3>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 print:grid-cols-5 gap-3"
+                         id="grid-vulnerabilidades"></div>
+                </section>
+                <!-- 4. Condições de Moradia e Zoonótica -->
+                <section class="avoid-break">
+                    <div class="flex items-center gap-2 border-b border-gray-300 pb-1 mb-3">
+                        <h3 class="text-sm font-black text-gray-800 uppercase tracking-wide">
+                            3. Habitação e Vigilância Zoonótica
+                        </h3>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 print:grid-cols-5 gap-3"
+                         id="grid-domiciliar"></div>
+                </section>
+            </div>
+        </div>
+        <script>
+            const idProfissional = Number("{{ id_profissional }}");
+
+            document.getElementById('select-mes-inicio').value = "{{ filtro_mes_inicio }}";
+            document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";
+
+            const svgsDeSeguranca = {
+                coracao: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>`,
+                gota: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2.252A8.014 8.014 0 0117.723 9c0 3.866-5.723 12.748-5.723 12.748S6.277 12.866 6.277 9A8.014 8.014 0 0112 2.252z"></path></svg>`,
+                alerta: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`,
+                gestante: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm-3.5 4.5a3.5 3.5 0 017 0v2a5 5 0 01-1 3v6h-4v-6a5 5 0 01-1-3v-2z"></path></svg>`,
+                cerebro: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"></path></svg>`,
+                cigarro: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16h16M4 12h16m-4-8a2 2 0 012 2v2M8 4a2 2 0 012 2v2m-6 4v8a2 2 0 002 2h12a2 2 0 002-2v-8"></path></svg>`,
+                acessivel: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM5 14h6.5l2.5 5.5m0 0H8.5m5.5 0V15"></path></svg>`,
+                casa: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"></path></svg>`,
+                raio: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"></path></svg>`,
+                pata: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="7" cy="8" r="2"></circle><circle cx="17" cy="8" r="2"></circle><circle cx="12" cy="5" r="2"></circle><path d="M12 11c-3 0-5 2-5 5 0 2 2 3 5 3s5-1 5-3c0-3-2-5-5-5z"></path></svg>`,
+                lupa: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"></path></svg>`
+            };
+
+            window.svgsDeSeguranca = svgsDeSeguranca;
+
+            function obterIconeSeguro(chaveSvg, urlExterna) {
+                return `<img src="${urlExterna}" class="w-6 h-6 object-contain drop-shadow-sm" alt="${chaveSvg}" onerror="this.outerHTML = window.svgsDeSeguranca['${chaveSvg}']">`;
+            }
+
+            const icons = {
+                coracao: obterIconeSeguro('coracao', 'https://cdn-icons-png.flaticon.com/512/833/833472.png'),
+                gota: obterIconeSeguro('gota', 'https://cdn-icons-png.flaticon.com/512/4228/4228719.png'),
+                alerta: obterIconeSeguro('alerta', 'https://cdn-icons-png.flaticon.com/512/1076/1076337.png'),
+                gestante: obterIconeSeguro('gestante', 'https://cdn-icons-png.flaticon.com/512/2965/2965709.png'),
+                cerebro: obterIconeSeguro('cerebro', 'https://cdn-icons-png.flaticon.com/512/2806/2806652.png'),
+                cigarro: obterIconeSeguro('cigarro', 'https://cdn-icons-png.flaticon.com/512/2610/2610115.png'),
+                acessivel: obterIconeSeguro('acessivel', 'https://cdn-icons-png.flaticon.com/512/3773/3773099.png'),
+                casa: obterIconeSeguro('casa', 'https://cdn-icons-png.flaticon.com/512/619/619034.png'),
+                raio: obterIconeSeguro('raio', 'https://cdn-icons-png.flaticon.com/512/3050/3050114.png'),
+                pata: obterIconeSeguro('pata', 'https://cdn-icons-png.flaticon.com/512/2138/2138241.png'),
+                lupa: obterIconeSeguro('lupa', 'https://cdn-icons-png.flaticon.com/512/3858/3858064.png')
+            };
+
+            const temas = {
+                red: {
+                    bg: "bg-red-50",
+                    border: "border-red-200",
+                    iconBg: "bg-red-100",
+                    iconText: "text-red-700",
+                    pctBg: "bg-red-200",
+                    pctText: "text-red-900"
+                },
+                orange: {
+                    bg: "bg-orange-50",
+                    border: "border-orange-200",
+                    iconBg: "bg-orange-100",
+                    iconText: "text-orange-700",
+                    pctBg: "bg-orange-200",
+                    pctText: "text-orange-900"
+                },
+                blue: {
+                    bg: "bg-blue-50",
+                    border: "border-blue-200",
+                    iconBg: "bg-blue-100",
+                    iconText: "text-blue-700",
+                    pctBg: "bg-blue-200",
+                    pctText: "text-blue-900"
+                },
+                teal: {
+                    bg: "bg-teal-50",
+                    border: "border-teal-200",
+                    iconBg: "bg-teal-100",
+                    iconText: "text-teal-700",
+                    pctBg: "bg-teal-200",
+                    pctText: "text-teal-900"
+                },
+                pink: {
+                    bg: "bg-fuchsia-50",
+                    border: "border-fuchsia-200",
+                    iconBg: "bg-fuchsia-100",
+                    iconText: "text-fuchsia-700",
+                    pctBg: "bg-fuchsia-200",
+                    pctText: "text-fuchsia-900"
+                }
+            };
+
+            function criarCard(label, valor, iconSvg, corKey, valTotalRef = 0, hideIfZero = false) {
+                if (hideIfZero && (valor === 0 || valor === "0" || valor === "0.0")) return "";
+
+                const t = temas[corKey] || temas.blue;
+                let pctHtml = '';
+
+                // O cálculo da percentagem relativa foi ativado para todos que enviarem valTotalRef
+                if (valTotalRef > 0) {
+                    const pct = ((valor / valTotalRef) * 100).toFixed(1);
+                    pctHtml = `<span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded ${t.pctBg} ${t.pctText}">${pct}%</span>`;
+                }
+
+                return `
                 <div class="flex flex-col p-3 rounded-lg ${t.bg} border ${t.border} shadow-sm avoid-break">
                     <div class="flex items-center justify-between mb-2">
                         <div class="${t.iconBg} p-1 rounded border ${t.border} ${t.iconText}">
@@ -206,38 +285,38 @@
                     </div>
                 </div>
             `;
-        }
+            }
 
-        async function carregarCadastros() {
-            const ano = document.getElementById('input-ano').value;
-            const mesInicio = document.getElementById('select-mes-inicio').value;
-            const mesFim = document.getElementById('select-mes-fim').value;
+            async function carregarCadastros() {
+                const ano = document.getElementById('input-ano').value;
+                const mesInicio = document.getElementById('select-mes-inicio').value;
+                const mesFim = document.getElementById('select-mes-fim').value;
 
-            document.getElementById('lbl-periodo').textContent = `Mês ${mesInicio}/${ano} a ${mesFim}/${ano}`;
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('conteudo-relatorio').style.display = 'none';
+                document.getElementById('lbl-periodo').textContent = `Mês ${mesInicio}/${ano} a ${mesFim}/${ano}`;
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('conteudo-relatorio').style.display = 'none';
 
-            try {
-                const url = `/api/relatorios/profissionais/${idProfissional}/cadastros-territorio?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}`;
-                const resp = await fetch(url);
-                const d = await resp.json();
+                try {
+                    const url = `/api/relatorios/profissionais/${idProfissional}/cadastros-territorio?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}`;
+                    const resp = await fetch(url);
+                    const d = await resp.json();
 
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('conteudo-relatorio').style.display = 'block';
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('conteudo-relatorio').style.display = 'block';
 
-                const totalCad = d.total_cadastros_individuais || 0;
-                const totalDom = d.total_domicilios || 0;
+                    const totalCad = d.total_cadastros_individuais || 0;
+                    const totalDom = d.total_domicilios || 0;
 
-                // KPIs Topo
-                document.getElementById('kpi-cidadaos').textContent = totalCad;
-                document.getElementById('kpi-domicilios').textContent = totalDom;
-                document.getElementById('kpi-responsaveis').textContent = d.responsavel_familiar || 0;
-                
-                const densidade = totalDom > 0 ? (d.total_moradores_declarados / totalDom).toFixed(1) : "0.0";
-                document.getElementById('kpi-densidade').textContent = densidade;
+                    // KPIs Topo
+                    document.getElementById('kpi-cidadaos').textContent = totalCad;
+                    document.getElementById('kpi-domicilios').textContent = totalDom;
+                    document.getElementById('kpi-responsaveis').textContent = d.responsavel_familiar || 0;
 
-                // Bloco 1: Condições Crônicas (Referência = totalCad)
-                document.getElementById('grid-cronicos').innerHTML = `
+                    const densidade = totalDom > 0 ? (d.total_moradores_declarados / totalDom).toFixed(1) : "0.0";
+                    document.getElementById('kpi-densidade').textContent = densidade;
+
+                    // Bloco 1: Condições Crônicas (Referência = totalCad)
+                    document.getElementById('grid-cronicos').innerHTML = `
                     ${criarCard("Hipertensão Arterial", d.cad_hipertensos, icons.coracao, "red", totalCad)}
                     ${criarCard("Diabetes Mellitus", d.cad_diabeticos, icons.gota, "red", totalCad)}
                     ${criarCard("Gestantes Adscritas", d.cad_gestantes, icons.gestante, "pink", totalCad)}
@@ -249,8 +328,8 @@
                     ${criarCard("Paciente com Câncer", d.cad_cancer, icons.alerta, "red", totalCad, true)}
                 `;
 
-                // Bloco 2: Vulnerabilidade (Referência = totalCad)
-                document.getElementById('grid-vulnerabilidades').innerHTML = `
+                    // Bloco 2: Vulnerabilidade (Referência = totalCad)
+                    document.getElementById('grid-vulnerabilidades').innerHTML = `
                     ${criarCard("Saúde Mental (Geral)", d.cad_tratamento_psiquiatrico, icons.cerebro, "orange", totalCad)}
                     ${criarCard("Total com Deficiência", d.cad_deficiencia_total, icons.acessivel, "orange", totalCad)}
                     ${criarCard("Espectro Autista (TEA)", d.cad_tea_autismo, icons.cerebro, "orange", totalCad, true)}
@@ -261,8 +340,8 @@
                     ${criarCard("Sem Documento (CPF)", d.cad_sem_cpf, icons.lupa, "orange", totalCad, true)}
                 `;
 
-                // Bloco 3: Habitação (Referência = totalDom)
-                document.getElementById('grid-domiciliar').innerHTML = `
+                    // Bloco 3: Habitação (Referência = totalDom)
+                    document.getElementById('grid-domiciliar').innerHTML = `
                     ${criarCard("Energia Elétrica", d.com_energia_eletrica, icons.raio, "blue", totalDom)}
                     ${criarCard("Cômodos / Domicílio", d.media_comodos, icons.casa, "blue")}
                     ${criarCard("Famílias c/ Animais", d.domicilios_com_animais, icons.pata, "teal", totalDom)}
@@ -272,13 +351,16 @@
                     ${criarCard("Possui Plano Privado", d.cad_plano_saude, icons.casa, "blue", totalDom)}
                 `;
 
-            } catch (err) {
-                console.error(err);
-                document.getElementById('loading').innerHTML = '<p class="text-red-600 font-bold">Erro ao carregar dados territoriais.</p>';
+                } catch (err) {
+                    console.error(err);
+                    document.getElementById('loading').innerHTML = '<p class="text-red-600 font-bold">Erro ao carregar dados territoriais.</p>';
+                }
             }
-        }
-        document.getElementById('form-filtros').addEventListener('submit', (e) => { e.preventDefault(); carregarCadastros(); });
-        document.addEventListener('DOMContentLoaded', carregarCadastros);
-    </script>
-</body>
+            document.getElementById('form-filtros').addEventListener('submit', (e) => {
+                e.preventDefault();
+                carregarCadastros();
+            });
+            document.addEventListener('DOMContentLoaded', carregarCadastros);
+        </script>
+    </body>
 </html>
