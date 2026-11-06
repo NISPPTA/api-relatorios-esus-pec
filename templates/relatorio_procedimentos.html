@@ -80,17 +80,26 @@
     <!-- FOLHA A4 DO RELATÓRIO -->
     <div class="max-w-5xl mx-auto bg-white p-10 rounded-lg shadow-md print-shadow-none border border-gray-200">
         
-        <!-- Cabeçalho -->
-        <div class="flex justify-between items-start border-b-2 border-blue-800 pb-4 mb-6">
+       <!-- Cabeçalho Padronizado -->
+        <div class="flex justify-between items-start border-b border-slate-200 pb-5 mb-6">
             <div>
-                <h1 class="text-3xl font-bold text-blue-900 uppercase tracking-wide">Relatório Gerencial</h1>
-                <h2 class="text-xl text-gray-600 mt-1">Produção de procedimentos individualizados</h2>
-                <p class="text-sm text-gray-500 mt-2">
-                    Período: <strong id="lbl-periodo-extenso">Maio a Outubro de 2026</strong> | Profissional: <strong>{{ nome_profissional }}</strong>
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="bg-indigo-100 text-indigo-800 text-[10px] font-black tracking-widest px-2.5 py-0.5 rounded uppercase">
+                        Procedimentos Ambulatoriais (SIGTAP)
+                    </span>
+                    <span class="bg-slate-100 text-slate-600 text-xs font-semibold px-2.5 py-0.5 rounded">
+                        Competência Oficial e-SUS PEC
+                    </span>
+                </div>
+                <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+                    Boletim de Procedimentos Clínicos
+                </h1>
+                <p class="text-sm text-slate-500 mt-1">
+                    Período: <strong id="lbl-periodo-extenso" class="text-slate-700">Carregando período...</strong> | Profissional: <strong class="text-slate-800">{{ nome_profissional }}</strong>
                 </p>
             </div>
-            <button onclick="window.print()" class="no-print bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded inline-flex items-center shadow transition-colors" id="btn-imprimir">
-                <svg class="fill-current w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M4 4h12v4H4V4zm2 2v1h8V6H6zm10 4H4c-1.1 0-2 .9-2 2v5h4v3h8v-3h4v-5c0-1.1-.9-2-2-2zm-2 8H6v-4h8v4zm2-6H6v-1h8v1z"/></svg>
+            <button onclick="window.print()" class="no-print flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-lg text-xs shadow transition-colors" id="btn-imprimir">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                 Imprimir / PDF
             </button>
         </div>
@@ -189,155 +198,178 @@
 
         </div>
     </div>
+<script>
+    const idProfissional = Number("{{ id_profissional }}");
+    let chartInstance = null;
 
-    <script>
-        const idProfissional = Number("{{ id_profissional }}");
-        let chartInstance = null;
+    const mesesNomes = {
+        1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho",
+        7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
+    };
 
-        const mesesNomes = {
-            1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril", 5: "Maio", 6: "Junho",
-            7: "Julho", 8: "Agosto", 9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
-        };
+    function sincronizarFiltrosComUrl() {
+        const inputAno = document.getElementById('input-ano');
+        const selectMesInicio = document.getElementById('select-mes-inicio');
+        const selectMesFim = document.getElementById('select-mes-fim');
+        const inputDesconto = document.getElementById('input-desconto');
 
-        async function carregarRelatorio() {
-            const ano = document.getElementById('input-ano').value;
-            const mesInicio = document.getElementById('select-mes-inicio').value;
-            const mesFim = document.getElementById('select-mes-fim').value;
-            const diasDesconto = document.getElementById('input-desconto').value || 0;
+        // Inicializa com os valores recebidos da barra global do dashboard
+        if (inputAno) inputAno.value = "{{ filtro_ano }}";
+        if (selectMesInicio) selectMesInicio.value = "{{ filtro_mes_inicio }}";
+        if (selectMesFim) selectMesFim.value = "{{ filtro_mes_fim }}";
+        if (inputDesconto) inputDesconto.value = "{{ filtro_dias_desconto }}" || 0;
+    }
 
-            document.getElementById('lbl-periodo-extenso').textContent = 
-                `${mesesNomes[mesInicio]} a ${mesesNomes[mesFim]} de ${ano}`;
+    async function carregarRelatorio() {
+        const ano = document.getElementById('input-ano')?.value || "{{ filtro_ano }}";
+        const mesInicio = Number(document.getElementById('select-mes-inicio')?.value || "{{ filtro_mes_inicio }}");
+        const mesFim = Number(document.getElementById('select-mes-fim')?.value || "{{ filtro_mes_fim }}");
+        const diasDesconto = document.getElementById('input-desconto')?.value || 0;
 
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('conteudo-relatorio').style.display = 'none';
+        // Atualização dinâmica do período por extenso
+        const rotuloPeriodo = (mesInicio === mesFim)
+            ? `${mesesNomes[mesInicio]} de ${ano}`
+            : `${mesesNomes[mesInicio]} a ${mesesNomes[mesFim]} de ${ano}`;
 
-            try {
-                const url = `/api/relatorios/profissionais/${idProfissional}/procedimentos?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}&dias_desconto=${diasDesconto}`;
-                const resp = await fetch(url);
-                if (!resp.ok) throw new Error("Erro na requisição dos dados.");
-                const dados = await resp.json();
+        const elPeriodo = document.getElementById('lbl-periodo-extenso');
+        if (elPeriodo) elPeriodo.textContent = rotuloPeriodo;
 
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('conteudo-relatorio').style.display = 'block';
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('conteudo-relatorio').style.display = 'none';
 
-                // Indicadores Rápidos
-                document.getElementById('ind-total').textContent = dados.resumo.total_procedimentos;
-                document.getElementById('ind-meses').textContent = dados.resumo.meses_com_registro;
-                document.getElementById('ind-dias').textContent = dados.resumo.dias_com_registro;
-                document.getElementById('ind-pico').textContent = dados.resumo.maior_volume_dia.quantidade > 0
-                    ? `${dados.resumo.maior_volume_dia.quantidade}`
-                    : '-';
+        try {
+            const url = `/api/relatorios/profissionais/${idProfissional}/procedimentos?ano=${ano}&mes_inicio=${mesInicio}&mes_fim=${mesFim}&dias_desconto=${diasDesconto}`;
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error("Erro na requisição dos dados.");
+            const dados = await resp.json();
 
-                // Resumo Executivo
-                document.getElementById('txt-media-registrada').textContent = dados.resumo.media_por_dia_registrado;
-                document.getElementById('txt-pct-efetiva').textContent = dados.resumo.percentual_dias_efetivos_geral;
-                document.getElementById('txt-dias-uteis-esperados').textContent = dados.resumo.dias_uteis_esperados;
-                document.getElementById('txt-media-teorica').textContent = dados.resumo.media_por_dia_esperado;
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('conteudo-relatorio').style.display = 'block';
 
-                // Gráfico Chart.js
-                const labelsMeses = dados.evolucao_mensal.map(m => m.mes);
-                const dadosGrafico = dados.evolucao_mensal.map(m => m.quantidade);
+            // Indicadores Rápidos
+            document.getElementById('ind-total').textContent = (dados.resumo.total_procedimentos || 0).toLocaleString('pt-BR');
+            document.getElementById('ind-meses').textContent = dados.resumo.meses_com_registro;
+            document.getElementById('ind-dias').textContent = dados.resumo.dias_com_registro;
+            document.getElementById('ind-pico').textContent = dados.resumo.maior_volume_dia.quantidade > 0
+                ? `${dados.resumo.maior_volume_dia.quantidade}`
+                : '-';
 
-                if (chartInstance) chartInstance.destroy();
-                const ctx = document.getElementById('graficoEvolucao').getContext('2d');
-                chartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labelsMeses,
-                        datasets: [{
-                            label: 'Procedimentos',
-                            data: dadosGrafico,
-                            backgroundColor: '#2563eb',
-                            borderColor: '#1e40af',
-                            borderWidth: 1,
-                            borderRadius: 4,
-                            barPercentage: 0.6
-                        }]
+            // Resumo Executivo
+            document.getElementById('txt-media-registrada').textContent = dados.resumo.media_por_dia_registrado;
+            document.getElementById('txt-pct-efetiva').textContent = dados.resumo.percentual_dias_efetivos_geral;
+            document.getElementById('txt-dias-uteis-esperados').textContent = dados.resumo.dias_uteis_esperados;
+            document.getElementById('txt-media-teorica').textContent = dados.resumo.media_por_dia_esperado;
+
+            // Gráfico Chart.js
+            const labelsMeses = dados.evolucao_mensal.map(m => m.mes);
+            const dadosGrafico = dados.evolucao_mensal.map(m => m.quantidade);
+
+            if (chartInstance) chartInstance.destroy();
+            const ctx = document.getElementById('graficoEvolucao').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labelsMeses,
+                    datasets: [{
+                        label: 'Procedimentos',
+                        data: dadosGrafico,
+                        backgroundColor: '#2563eb',
+                        borderColor: '#1e40af',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#e5e7eb' } },
+                        x: { grid: { display: false } }
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: { beginAtZero: true, grid: { color: '#e5e7eb' } },
-                            x: { grid: { display: false } }
-                        },
-                        animation: { duration: 0 }
-                    }
-                });
-
-                // Tabela de Evolução Mensal
-                const tbody = document.getElementById('tabela-corpo');
-                tbody.innerHTML = '';
-                dados.evolucao_mensal.forEach(m => {
-                    const tr = document.createElement('tr');
-                    tr.className = "border-b";
-                    tr.innerHTML = `
-                        <td class="px-3 py-2 font-medium">${m.mes}/${ano}</td>
-                        <td class="px-3 py-2 text-right">${m.dias_calendario}</td>
-                        <td class="px-3 py-2 text-right">${m.dias_uteis}</td>
-                        <td class="px-3 py-2 text-right">${m.dias_com_registro}</td>
-                        <td class="px-3 py-2 text-right">${m.percentual_dias_efetivos}%</td>
-                        <td class="px-3 py-2 text-right font-medium">${m.quantidade}</td>
-                        <td class="px-3 py-2 text-right">${m.media_dia > 0 ? m.media_dia : '-'}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-
-                // Rodapé da Tabela
-                document.getElementById('tab-tot-calendario').textContent = dados.resumo.total_dias_calendario;
-                document.getElementById('tab-tot-uteis').textContent = dados.resumo.dias_uteis_esperados;
-                document.getElementById('tab-tot-registrados').textContent = dados.resumo.dias_com_registro;
-                document.getElementById('tab-tot-pct').textContent = `${dados.resumo.percentual_dias_efetivos_geral}%`;
-                document.getElementById('tab-tot-procedimentos').textContent = dados.resumo.total_procedimentos;
-                document.getElementById('tab-tot-media').textContent = dados.resumo.media_por_dia_registrado;
-
-                // Seção 3 - Distribuição dos Registros Diários
-                const txtDist = document.getElementById('txt-distribuicao-resumo');
-                if (dados.resumo.maior_volume_dia.quantidade > 0) {
-                    txtDist.innerHTML = `Foram identificados <strong>${dados.resumo.dias_com_registro} dias com movimentação</strong> no período. O maior volume diário ocorreu em <strong>${dados.resumo.maior_volume_dia.data}</strong>, com <strong>${dados.resumo.maior_volume_dia.quantidade} procedimentos</strong>.`;
-                } else {
-                    txtDist.textContent = "Não foram encontrados registros diários de produção no período informado.";
+                    animation: { duration: 0 }
                 }
+            });
 
-                const gridDias = document.getElementById('grid-dias-container');
-                gridDias.innerHTML = '';
-                dados.registros_diarios.forEach(d => {
-                    const card = document.createElement('div');
-                    card.className = "flex justify-between items-center p-2 rounded bg-gray-50 border border-gray-200";
-                    card.innerHTML = `
-                        <span class="font-mono text-gray-700">${d.data}</span>
-                        <span class="font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">${d.quantidade}</span>
-                    `;
-                    gridDias.appendChild(card);
-                });
+            // Tabela de Evolução Mensal
+            const tbody = document.getElementById('tabela-corpo');
+            tbody.innerHTML = '';
+            dados.evolucao_mensal.forEach(m => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b";
+                tr.innerHTML = `
+                    <td class="px-3 py-2 font-medium">${m.mes}/${ano}</td>
+                    <td class="px-3 py-2 text-right">${m.dias_calendario}</td>
+                    <td class="px-3 py-2 text-right">${m.dias_uteis}</td>
+                    <td class="px-3 py-2 text-right">${m.dias_com_registro}</td>
+                    <td class="px-3 py-2 text-right">${m.percentual_dias_efetivos}%</td>
+                    <td class="px-3 py-2 text-right font-medium">${(m.quantidade || 0).toLocaleString('pt-BR')}</td>
+                    <td class="px-3 py-2 text-right">${m.media_dia > 0 ? m.media_dia : '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
 
-                // Seção 4 - SIGTAP
-                const tbodySigtap = document.getElementById('tabela-sigtap');
-                tbodySigtap.innerHTML = '';
-                dados.detalhamento.forEach(s => {
-                    const tr = document.createElement('tr');
-                    tr.className = "border-b";
-                    tr.innerHTML = `
-                        <td class="px-4 py-2 font-mono text-gray-500">${s.codigo_sigtap}</td>
-                        <td class="px-4 py-2 font-medium">${s.procedimento}</td>
-                        <td class="px-4 py-2 text-right font-bold">${s.quantidade}</td>
-                    `;
-                    tbodySigtap.appendChild(tr);
-                });
+            // Rodapé da Tabela
+            document.getElementById('tab-tot-calendario').textContent = dados.resumo.total_dias_calendario;
+            document.getElementById('tab-tot-uteis').textContent = dados.resumo.dias_uteis_esperados;
+            document.getElementById('tab-tot-registrados').textContent = dados.resumo.dias_com_registro;
+            document.getElementById('tab-tot-pct').textContent = `${dados.resumo.percentual_dias_efetivos_geral}%`;
+            document.getElementById('tab-tot-procedimentos').textContent = (dados.resumo.total_procedimentos || 0).toLocaleString('pt-BR');
+            document.getElementById('tab-tot-media').textContent = dados.resumo.media_por_dia_registrado;
 
-            } catch (err) {
-                console.error(err);
-                document.getElementById('loading').innerHTML = `<p class="text-red-600 font-bold">Erro ao carregar dados do profissional.</p>`;
+            // Seção 3 - Distribuição dos Registros Diários
+            const txtDist = document.getElementById('txt-distribuicao-resumo');
+            if (dados.resumo.maior_volume_dia.quantidade > 0) {
+                txtDist.innerHTML = `Foram identificados <strong>${dados.resumo.dias_com_registro} dias com movimentação</strong> no período. O maior volume diário ocorreu em <strong>${dados.resumo.maior_volume_dia.data}</strong>, com <strong>${dados.resumo.maior_volume_dia.quantidade} procedimentos</strong>.`;
+            } else {
+                txtDist.textContent = "Não foram encontrados registros diários de produção no período informado.";
             }
-        }
 
-        document.getElementById('form-filtros').addEventListener('submit', (e) => {
+            const gridDias = document.getElementById('grid-dias-container');
+            gridDias.innerHTML = '';
+            dados.registros_diarios.forEach(d => {
+                const card = document.createElement('div');
+                card.className = "flex justify-between items-center p-2 rounded bg-gray-50 border border-gray-200";
+                card.innerHTML = `
+                    <span class="font-mono text-gray-700">${d.data}</span>
+                    <span class="font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">${d.quantidade}</span>
+                `;
+                gridDias.appendChild(card);
+            });
+
+            // Seção 4 - SIGTAP
+            const tbodySigtap = document.getElementById('tabela-sigtap');
+            tbodySigtap.innerHTML = '';
+            dados.detalhamento.forEach(s => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b";
+                tr.innerHTML = `
+                    <td class="px-4 py-2 font-mono text-gray-500">${s.codigo_sigtap}</td>
+                    <td class="px-4 py-2 font-medium">${s.procedimento}</td>
+                    <td class="px-4 py-2 text-right font-bold">${(s.quantidade || 0).toLocaleString('pt-BR')}</td>
+                `;
+                tbodySigtap.appendChild(tr);
+            });
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById('loading').innerHTML = `<p class="text-red-600 font-bold">Erro ao carregar dados do profissional.</p>`;
+        }
+    }
+
+    const formFiltros = document.getElementById('form-filtros');
+    if (formFiltros) {
+        formFiltros.addEventListener('submit', (e) => {
             e.preventDefault();
             carregarRelatorio();
         });
+    }
 
-        document.addEventListener('DOMContentLoaded', carregarRelatorio);
-    </script>
+    document.addEventListener('DOMContentLoaded', () => {
+        sincronizarFiltrosComUrl();
+        carregarRelatorio();
+    });
+</script>
 </body>
 </html>
