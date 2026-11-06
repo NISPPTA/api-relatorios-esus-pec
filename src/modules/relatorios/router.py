@@ -193,13 +193,22 @@ async def obter_relatorio_procedimentos_odonto(
 
 
 @router.get(
+    "/profissionais/{id_profissional}/lotacoes",
+    summary="Lista Histórico de Lotações do Profissional no Ano",
+)
+async def api_lotacoes_profissional(
+    session: DbSession,
+    id_profissional: int = Path(..., description="ID numérico do profissional"),
+    ano: int = Query(..., description="Ano do relatório"),
+):
+    return await service.buscar_lotacoes_historicas_profissional(
+        session, id_profissional=id_profissional, ano=ano
+    )
+
+
+@router.get(
     "/profissionais/{id_profissional}/consultas-medicas",
     summary="Boletim Analítico de Consultas Médicas e Desempenho Clínico",
-    description=(
-        "Consolida atendimentos, condutas clínicas, perfil demográfico, "
-        "qualidade de exame físico (sinais vitais), morbidades (CIAP-2 e CID-10), "
-        "procedimentos avaliados e absenteísmo auditado na agenda."
-    ),
 )
 async def api_relatorio_consultas_medicas(
     session: DbSession,
@@ -209,64 +218,60 @@ async def api_relatorio_consultas_medicas(
     ano: int = Query(2026, ge=2020, le=2030, description="Ano da competência"),
     mes_inicio: int = Query(1, ge=1, le=12, description="Mês inicial"),
     mes_fim: int = Query(12, ge=1, le=12, description="Mês final"),
+    cnes: str | None = Query(
+        None, description="Filtrar por unidade de saúde (Opcional)"
+    ),
 ):
-    """
-    Orquestra as rotinas analíticas do módulo médico e entrega o
-    payload completo para renderização do painel clínico e gerencial.
-    """
     validar_intervalo_meses(mes_inicio, mes_fim)
 
-    # 1. Vínculo e Lotação Principal (UBS, Equipe, CNES, INE)
     lotacao = await service.buscar_lotacao_principal_medico(
-        session=session, id_profissional=id_profissional, ano=ano
+        session=session,
+        id_profissional=id_profissional,
+        ano=ano,
+        mes_inicio=mes_inicio,
+        mes_fim=mes_fim,
+        cnes=cnes,
     )
-
-    # 2. Resumo de Atendimentos, Condutas e Top CIAP-2
     consultas = await service.gerar_relatorio_consultas_medicas(
         session=session,
         id_profissional=id_profissional,
         ano=ano,
         mes_inicio=mes_inicio,
         mes_fim=mes_fim,
+        cnes=cnes,
     )
-
-    # 3. Top CIDs diagnosticados no período
     top_cids = await service.buscar_top_cids_medico(
         session=session,
         id_profissional=id_profissional,
         ano=ano,
         mes_inicio=mes_inicio,
         mes_fim=mes_fim,
+        cnes=cnes,
     )
-
-    # 4. Qualidade de Registro Clínico (PA e Peso no consultório)
     sinais_vitais = await service.calcular_taxa_sinais_vitais_medico(
         session=session,
         id_profissional=id_profissional,
         ano=ano,
         mes_inicio=mes_inicio,
         mes_fim=mes_fim,
+        cnes=cnes,
     )
-
-    # 5. Pirâmide Etária, Divisão por Sexo e Gestantes
     demografia = await service.buscar_perfil_demografico_medico(
         session=session,
         id_profissional=id_profissional,
         ano=ano,
         mes_inicio=mes_inicio,
         mes_fim=mes_fim,
+        cnes=cnes,
     )
-
-    # 6. Absenteísmo Auditado (Tratamento de faltas por inércia de agenda)
     absenteismo = await service.calcular_absenteismo_agenda(
         session=session,
         id_profissional=id_profissional,
         ano=ano,
         mes_inicio=mes_inicio,
         mes_fim=mes_fim,
+        cnes=cnes,
     )
-
-    # 7. Procedimentos e Exames Clínicos Avaliados (ABEX / SIGTAP)
     procedimentos_avaliados = await service.buscar_top_procedimentos_avaliados_medico(
         session=session,
         id_profissional=id_profissional,
@@ -274,14 +279,11 @@ async def api_relatorio_consultas_medicas(
         mes_inicio=mes_inicio,
         mes_fim=mes_fim,
         limite=10,
+        cnes=cnes,
     )
 
     return {
-        "periodo": {
-            "ano": ano,
-            "mes_inicio": mes_inicio,
-            "mes_fim": mes_fim,
-        },
+        "periodo": {"ano": ano, "mes_inicio": mes_inicio, "mes_fim": mes_fim},
         "profissional": lotacao,
         "producao_clinica": consultas.get("resumo", {}),
         "morbidades": {
