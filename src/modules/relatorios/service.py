@@ -1334,8 +1334,8 @@ class RelatoriosService:
                 COUNT(CASE WHEN fai.st_encaminhamento_intern_hospi = 1 THEN 1 END) AS conduta_encaminhamento_hospitalar,
                 
                 -- Solicitação e Avaliação de Exames/Procedimentos
-                COUNT(CASE WHEN fai.ds_filtro_proced_solicitados IS NOT NULL AND fai.ds_filtro_proced_solicitados <> '' THEN 1 END) AS solicitacao_exames,
-                COUNT(CASE WHEN fai.ds_filtro_proced_avaliados IS NOT NULL AND fai.ds_filtro_proced_avaliados <> '' THEN 1 END) AS avaliacao_exames
+                COUNT(CASE WHEN fai.ds_filtro_proced_solicitados IS NOT NULL AND trim(fai.ds_filtro_proced_solicitados, '|') <> '' THEN 1 END) AS solicitacao_exames,
+                COUNT(CASE WHEN fai.ds_filtro_proced_avaliados IS NOT NULL AND trim(fai.ds_filtro_proced_avaliados, '|') <> '' THEN 1 END) AS avaliacao_exames
             FROM tb_fat_atendimento_individual fai
             JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fai.co_dim_tempo
             WHERE fai.co_dim_profissional_1 = :id_prof
@@ -1348,7 +1348,8 @@ class RelatoriosService:
                 JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fai.co_dim_tempo
                 WHERE fai.co_dim_profissional_1 = :id_prof
                   AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
-                  AND fai.ds_filtro_ciaps IS NOT NULL AND fai.ds_filtro_ciaps <> ''
+                  AND fai.ds_filtro_ciaps IS NOT NULL 
+                  AND trim(fai.ds_filtro_ciaps, '|') <> '' 
             )
             SELECT 
                 c.codigo_ciap,
@@ -1356,7 +1357,7 @@ class RelatoriosService:
                 COUNT(1) AS quantidade
             FROM ciaps_explodidos c
             JOIN tb_dim_ciap dc ON dc.nu_ciap = c.codigo_ciap
-            WHERE c.codigo_ciap <> ''
+            WHERE trim(c.codigo_ciap) <> ''
             GROUP BY c.codigo_ciap, dc.no_ciap
             ORDER BY quantidade DESC
             LIMIT 10;
@@ -1378,7 +1379,12 @@ class RelatoriosService:
         }
 
     async def buscar_top_cids_medico(
-        self, session: AsyncSession, id_profissional: int, ano: int
+        self,
+        session: AsyncSession,
+        id_profissional: int,
+        ano: int,
+        mes_inicio: int,
+        mes_fim: int,
     ) -> list[dict[str, Any]]:
         """Extrai o ranking anual dos 10 CIDs mais diagnosticados pelo médico usando unnest."""
         query = text("""
@@ -1388,7 +1394,9 @@ class RelatoriosService:
                 JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fai.co_dim_tempo
                 WHERE fai.co_dim_profissional_1 = :id_prof
                   AND t.nu_ano = :ano
-                  AND fai.ds_filtro_cids IS NOT NULL AND fai.ds_filtro_cids <> ''
+                  AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+                  AND fai.ds_filtro_cids IS NOT NULL 
+                  AND trim(fai.ds_filtro_cids, '|') <> ''
             )
             SELECT 
                 c.codigo_cid,
@@ -1396,18 +1404,29 @@ class RelatoriosService:
                 COUNT(1) AS volume_atendimentos
             FROM cids_explodidos c
             JOIN tb_dim_cid dc ON dc.nu_cid = c.codigo_cid
-            WHERE c.codigo_cid <> ''
+            WHERE trim(c.codigo_cid) <> ''
             GROUP BY c.codigo_cid, dc.no_cid
             ORDER BY volume_atendimentos DESC
             LIMIT 10;
         """)
         resultado = await session.execute(
-            query, {"id_prof": id_profissional, "ano": ano}
+            query,
+            {
+                "id_prof": id_profissional,
+                "ano": ano,
+                "mes_inicio": mes_inicio,
+                "mes_fim": mes_fim,
+            },
         )
         return [dict(row._mapping) for row in resultado.all()]
 
     async def calcular_taxa_sinais_vitais_medico(
-        self, session: AsyncSession, id_profissional: int, ano: int
+        self,
+        session: AsyncSession,
+        id_profissional: int,
+        ano: int,
+        mes_inicio: int,
+        mes_fim: int,
     ) -> dict[str, Any]:
         """Calcula o percentual de preenchimento de PA e Peso feito pelo próprio médico no PEC."""
         query = text("""
@@ -1420,10 +1439,21 @@ class RelatoriosService:
             FROM tb_fat_atendimento_individual fai
             JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fai.co_dim_tempo
             WHERE fai.co_dim_profissional_1 = :id_prof
-              AND t.nu_ano = :ano;
+              AND t.nu_ano = :ano
+              AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim;
         """)
         resultado = (
-            (await session.execute(query, {"id_prof": id_profissional, "ano": ano}))
+            (
+                await session.execute(
+                    query,
+                    {
+                        "id_prof": id_profissional,
+                        "ano": ano,
+                        "mes_inicio": mes_inicio,
+                        "mes_fim": mes_fim,
+                    },
+                )
+            )
             .mappings()
             .first()
         )
@@ -1448,7 +1478,12 @@ class RelatoriosService:
         }
 
     async def buscar_perfil_demografico_medico(
-        self, session: AsyncSession, id_profissional: int, ano: int
+        self,
+        session: AsyncSession,
+        id_profissional: int,
+        ano: int,
+        mes_inicio: int,
+        mes_fim: int,
     ) -> dict[str, Any]:
         """Calcula a distribuição etária dinâmica (Idade = Atendimento - Nascimento), Sexo e Gestantes."""
         query = text("""
@@ -1467,10 +1502,21 @@ class RelatoriosService:
             JOIN tb_fat_cidadao_pec fcp ON fcp.co_seq_fat_cidadao_pec = fai.co_fat_cidadao_pec
             JOIN tb_cidadao c ON c.co_seq_cidadao = fcp.co_cidadao
             WHERE fai.co_dim_profissional_1 = :id_prof
-              AND t.nu_ano = :ano;
+              AND t.nu_ano = :ano
+              AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim;
         """)
         resultado = (
-            (await session.execute(query, {"id_prof": id_profissional, "ano": ano}))
+            (
+                await session.execute(
+                    query,
+                    {
+                        "id_prof": id_profissional,
+                        "ano": ano,
+                        "mes_inicio": mes_inicio,
+                        "mes_fim": mes_fim,
+                    },
+                )
+            )
             .mappings()
             .first()
         )
@@ -1489,7 +1535,12 @@ class RelatoriosService:
         }
 
     async def calcular_absenteismo_agenda(
-        self, session: AsyncSession, id_profissional: int, ano: int
+        self,
+        session: AsyncSession,
+        id_profissional: int,
+        ano: int,
+        mes_inicio: int,
+        mes_fim: int,
     ) -> dict[str, Any]:
         """Cruza agendamentos (tb_agendado) para apurar absenteísmo real e corrigir falhas de fechamento de agenda."""
         query = text("""
@@ -1518,6 +1569,7 @@ class RelatoriosService:
                 JOIN tb_prof p ON p.co_seq_prof = l.co_prof
                 JOIN profissional_dim pd ON pd.nu_cns = p.nu_cns
                 WHERE EXTRACT(YEAR FROM a.dt_agendado) = :ano
+                  AND EXTRACT(MONTH FROM a.dt_agendado) BETWEEN :mes_inicio AND :mes_fim
             )
             SELECT 
                 classificacao_auditoria,
@@ -1526,16 +1578,23 @@ class RelatoriosService:
             GROUP BY classificacao_auditoria;
         """)
         resultado = await session.execute(
-            query, {"id_prof": id_profissional, "ano": ano}
+            query,
+            {
+                "id_prof": id_profissional,
+                "ano": ano,
+                "mes_inicio": mes_inicio,
+                "mes_fim": mes_fim,
+            },
         )
         linhas = {row.classificacao_auditoria: row.total for row in resultado.all()}
 
-        atendidos = linhas.get("ATENDIDO", 0)
-        faltas_confirmadas = linhas.get("FALTA_CONFIRMADA", 0)
-        faltas_inercia = linhas.get("FALTA_POR_INERCIA", 0)
-        abandonos_fila = linhas.get("ABANDONO_SALA_ESPERA", 0)
-        cancelados = linhas.get("CANCELADO", 0)
-        agendados_futuros = linhas.get("AGENDADO_FUTURO", 0)
+        # Garante coerção para int evitando TypeErrors (None) no cálculo de divisão
+        atendidos = int(linhas.get("ATENDIDO", 0) or 0)
+        faltas_confirmadas = int(linhas.get("FALTA_CONFIRMADA", 0) or 0)
+        faltas_inercia = int(linhas.get("FALTA_POR_INERCIA", 0) or 0)
+        abandonos_fila = int(linhas.get("ABANDONO_SALA_ESPERA", 0) or 0)
+        cancelados = int(linhas.get("CANCELADO", 0) or 0)
+        agendados_futuros = int(linhas.get("AGENDADO_FUTURO", 0) or 0)
 
         total_faltas = faltas_confirmadas + faltas_inercia
         total_ofertado_passado = atendidos + total_faltas + abandonos_fila
@@ -1565,7 +1624,13 @@ class RelatoriosService:
         }
 
     async def buscar_top_procedimentos_avaliados_medico(
-        self, session: AsyncSession, id_profissional: int, ano: int, limite: int = 10
+        self,
+        session: AsyncSession,
+        id_profissional: int,
+        ano: int,
+        mes_inicio: int,
+        mes_fim: int,
+        limite: int = 10,
     ) -> list[dict[str, Any]]:
         """Extrai o ranking de procedimentos e exames clínicos solicitados (ABEX e SIGTAP)."""
         query = text("""
@@ -1576,8 +1641,9 @@ class RelatoriosService:
                 JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fai.co_dim_tempo
                 WHERE fai.co_dim_profissional_1 = :id_prof
                   AND t.nu_ano = :ano
+                  AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
                   AND fai.ds_filtro_proced_avaliados IS NOT NULL 
-                  AND fai.ds_filtro_proced_avaliados <> ''
+                  AND trim(fai.ds_filtro_proced_avaliados, '|') <> ''
             )
             SELECT 
                 c.codigo_procedimento,
@@ -1586,13 +1652,20 @@ class RelatoriosService:
             FROM proced_explodidos c
             LEFT JOIN tb_dim_procedimento dim ON dim.co_proced = c.codigo_procedimento
             LEFT JOIN tb_proced pr ON pr.co_proced = c.codigo_procedimento
-            WHERE c.codigo_procedimento <> ''
+            WHERE trim(c.codigo_procedimento) <> ''
             GROUP BY 1, 2
             ORDER BY total_realizado DESC
             LIMIT :limite;
         """)
         resultado = await session.execute(
-            query, {"id_prof": id_profissional, "ano": ano, "limite": limite}
+            query,
+            {
+                "id_prof": id_profissional,
+                "ano": ano,
+                "mes_inicio": mes_inicio,
+                "mes_fim": mes_fim,
+                "limite": limite,
+            },
         )
         return [dict(row._mapping) for row in resultado.all()]
 
