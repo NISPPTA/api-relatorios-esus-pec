@@ -1,229 +1,317 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Executivo e-SUS PEC</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
-        .sidebar-scroll::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 4px; }
-    </style>
-</head>
-<body class="bg-slate-100 flex h-screen overflow-hidden font-sans">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Painel Executivo e-SUS PEC</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            .sidebar-scroll::-webkit-scrollbar {
+                width: 4px;
+            }
 
-    <!-- BARRA LATERAL DINÂMICA (SIDEBAR) -->
-    <aside class="w-72 bg-slate-900 text-white flex flex-col justify-between shrink-0 border-r border-slate-800">
-        <div class="p-5 flex flex-col h-full overflow-hidden">
-            
-            <!-- Identificação do Profissional -->
-            <div class="border-b border-slate-800 pb-5 mb-4">
-                <span class="text-[10px] font-black tracking-widest text-indigo-400 uppercase">Profissional em Análise</span>
-                <h2 id="lbl-nome-prof" class="text-lg font-black text-white mt-1 leading-tight">{{ nome_profissional }}</h2>
-                <div id="container-tags" class="flex flex-wrap gap-1.5 mt-2.5">
-                    <span class="bg-slate-800 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700">
-                        ID: {{ id_profissional }}
-                    </span>
-                    <span id="tag-loading" class="bg-slate-800 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded animate-pulse">
-                        Carregando CBO...
-                    </span>
+            .sidebar-scroll::-webkit-scrollbar-thumb {
+                background-color: #334155;
+                border-radius: 4px;
+            }
+        </style>
+    </head>
+    <body class="bg-slate-100 flex h-screen overflow-hidden font-sans">
+        <!-- BARRA LATERAL DINÂMICA (SIDEBAR) -->
+        <aside class="w-72 bg-slate-900 text-white flex flex-col justify-between shrink-0 border-r border-slate-800">
+            <div class="p-5 flex flex-col h-full overflow-hidden">
+                <!-- Identificação do Profissional -->
+                <div class="border-b border-slate-800 pb-5 mb-4">
+                    <span class="text-[10px] font-black tracking-widest text-indigo-400 uppercase">Profissional em Análise</span>
+                    <h2 id="lbl-nome-prof"
+                        class="text-lg font-black text-white mt-1 leading-tight">{{ nome_profissional }}</h2>
+                    <div id="container-tags" class="flex flex-wrap gap-1.5 mt-2.5">
+                        <span class="bg-slate-800 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700">
+                            ID: {{ id_profissional }}
+                        </span>
+                        <span id="tag-loading"
+                              class="bg-slate-800 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded animate-pulse">
+                            Carregando CBO...
+                        </span>
+                    </div>
+                </div>
+                <!-- Navegação Modular por Categorias -->
+                <div class="flex-1 overflow-y-auto sidebar-scroll pr-1">
+                    <div id="menu-categorias" class="flex flex-col gap-5">
+                        <p class="text-xs text-slate-500 italic py-4">Mapeando relatórios autorizados...</p>
+                    </div>
                 </div>
             </div>
-
-            <!-- Navegação Modular por Categorias -->
-            <div class="flex-1 overflow-y-auto sidebar-scroll pr-1">
-                <div id="menu-categorias" class="flex flex-col gap-5">
-                    <p class="text-xs text-slate-500 italic py-4">Mapeando relatórios autorizados...</p>
-                </div>
+            <!-- Rodapé da Sidebar -->
+            <div class="p-4 border-t border-slate-800 bg-slate-950/40">
+                <a href="/busca"
+                   class="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors py-1.5 px-3 rounded hover:bg-slate-800">
+                    <svg class="w-4 h-4"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Trocar Profissional
+                </a>
             </div>
-        </div>
+        </aside>
+        <!-- ÁREA PRINCIPAL COM FILTROS E IFRAME -->
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <!-- Barra Superior de Filtros Globais -->
+            <header class="bg-white border-b border-slate-200 px-6 py-3 flex flex-wrap items-end justify-between gap-4 shrink-0 shadow-sm">
+                <form id="form-filtros-global" class="flex flex-wrap items-end gap-3">
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Ano</label>
+                        <input type="number"
+                               id="filtro-ano"
+                               value="2026"
+                               min="2020"
+                               max="2030"
+                               class="border border-slate-300 rounded px-2.5 py-1 text-xs font-semibold text-slate-700 w-20 focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Mês Início</label>
+                        <select id="filtro-mes-inicio"
+                                class="border border-slate-300 rounded px-2.5 py-1 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500">
+                            <option value="1" selected>Jan (01)</option>
+                            <option value="2">Fev (02)</option>
+                            <option value="3">Mar (03)</option>
+                            <option value="4">Abr (04)</option>
+                            <option value="5">Mai (05)</option>
+                            <option value="6">Jun (06)</option>
+                            <option value="7">Jul (07)</option>
+                            <option value="8">Ago (08)</option>
+                            <option value="9">Set (09)</option>
+                            <option value="10">Out (10)</option>
+                            <option value="11">Nov (11)</option>
+                            <option value="12">Dez (12)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Mês Fim</label>
+                        <select id="filtro-mes-fim"
+                                class="border border-slate-300 rounded px-2.5 py-1 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500">
+                            <option value="1">Jan (01)</option>
+                            <option value="2">Fev (02)</option>
+                            <option value="3">Mar (03)</option>
+                            <option value="4">Abr (04)</option>
+                            <option value="5">Mai (05)</option>
+                            <option value="6">Jun (06)</option>
+                            <option value="7">Jul (07)</option>
+                            <option value="8">Ago (08)</option>
+                            <option value="9">Set (09)</option>
+                            <option value="10">Out (10)</option>
+                            <option value="11">Nov (11)</option>
+                            <option value="12" selected>Dez (12)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Filtro de Unidade (Opcional)</label>
+                        <select id="filtro-cnes"
+                                class="border border-slate-300 rounded px-2.5 py-1 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500 w-48 truncate">
+                            <option value="">Consolidado (Todas as UBSs)</option>
+                            <!-- Carregado via JS -->
+                        </select>
+                    </div>
+                    <button type="submit"
+                            class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-1.5 rounded text-xs transition-colors shadow">
+                        Atualizar Indicadores
+                    </button>
+                </form>
+            </header>
+            <!-- Iframe de Visualização do Relatório Ativo -->
+            <section class="flex-1 bg-slate-100 p-4 min-h-0">
+                <iframe id="frame-relatorio"
+                        title="Visualização do Relatório"
+                        src="about:blank"
+                        class="w-full h-full border border-slate-200 rounded-lg shadow-inner bg-white"></iframe>
+            </section>
+        </main>
+        <script>
+            const idProfissional = Number("{{ id_profissional }}");
+            const nomeProfissional = "{{ nome_profissional }}";
 
-        <!-- Rodapé da Sidebar -->
-        <div class="p-4 border-t border-slate-800 bg-slate-950/40">
-            <a href="/busca" class="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors py-1.5 px-3 rounded hover:bg-slate-800">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-                Trocar Profissional
-            </a>
-        </div>
-    </aside>
+            let relatorioAtivo = null;
+            let catalogoDisponivel = [];
 
-    <!-- ÁREA PRINCIPAL COM FILTROS E IFRAME -->
-    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
-        
-        <!-- Barra Superior de Filtros Globais -->
-        <header class="bg-white border-b border-slate-200 px-6 py-3 flex flex-wrap items-end justify-between gap-4 shrink-0 shadow-sm">
-            <form id="form-filtros-global" class="flex flex-wrap items-end gap-3">
-                <div>
-                    <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Ano</label>
-                    <input type="number" id="filtro-ano" value="2026" min="2020" max="2030" 
-                           class="border border-slate-300 rounded px-2.5 py-1 text-xs font-semibold text-slate-700 w-24 focus:ring-2 focus:ring-indigo-500">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Mês Início</label>
-                    <select id="filtro-mes-inicio" class="border border-slate-300 rounded px-2.5 py-1 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500">
-                        <option value="1" selected>Jan (01)</option><option value="2">Fev (02)</option><option value="3">Mar (03)</option>
-                        <option value="4">Abr (04)</option><option value="5">Mai (05)</option><option value="6">Jun (06)</option>
-                        <option value="7">Jul (07)</option><option value="8">Ago (08)</option><option value="9">Set (09)</option>
-                        <option value="10">Out (10)</option><option value="11">Nov (11)</option><option value="12">Dez (12)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Mês Fim</label>
-                    <select id="filtro-mes-fim" class="border border-slate-300 rounded px-2.5 py-1 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500">
-                        <option value="1">Jan (01)</option><option value="2">Fev (02)</option><option value="3">Mar (03)</option>
-                        <option value="4">Abr (04)</option><option value="5">Mai (05)</option><option value="6">Jun (06)</option>
-                        <option value="7">Jul (07)</option><option value="8">Ago (08)</option><option value="9">Set (09)</option>
-                        <option value="10">Out (10)</option><option value="11">Nov (11)</option><option value="12" selected>Dez (12)</option>
-                    </select>
-                </div>
-                <button type="submit" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-1.5 rounded text-xs transition-colors shadow">
-                    Atualizar Indicadores
-                </button>
-            </form>
-        </header>
+            // Ícones em SVG por tipo de relatório
+            const iconesRelatorios = {
+                "relatorio_executivo": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>`,
+                "matriz_serie_historica": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`,
+                "visitas_domiciliares": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>`,
+                "cadastros_territoriais": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>`,
+                "consultas_odontologicas": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>`,
+                "procedimentos_odonto": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>`,
+                "consultas_medicas": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 4v4m0 0v4m0-4h4m-4 0h-4m-5 7v4a2 2 0 002 2h6a2 2 0 002-2v-4M7 15a4 4 0 01-4-4V7a2 2 0 012-2h3m0 0a2 2 0 012 2v4a4 4 0 01-4 4z"></path></svg>`,
+                "padrao": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>`
+            };
 
-        <!-- Iframe de Visualização do Relatório Ativo -->
-        <section class="flex-1 bg-slate-100 p-4 min-h-0">
-            <iframe id="frame-relatorio" src="about:blank" class="w-full h-full border border-slate-200 rounded-lg shadow-inner bg-white"></iframe>
-        </section>
-    </main>
+            async function inicializarDashboard() {
+                try {
+                    const resp = await fetch(`/api/relatorios/profissionais/${idProfissional}/perfil`);
+                    if (!resp.ok) throw new Error("Erro ao carregar perfil do profissional.");
+                    const perfil = await resp.json();
 
-    <script>
-        const idProfissional = Number("{{ id_profissional }}");
-        const nomeProfissional = "{{ nome_profissional }}";
+                    // 1. Atualizar Tags Dinâmicas do Profissional
+                    document.getElementById('lbl-nome-prof').textContent = perfil.nome;
+                    const containerTags = document.getElementById('container-tags');
 
-        let relatorioAtivo = null;
-        let catalogoDisponivel = [];
+                    // Fragmento de DOM para melhor performance (evita multiplos reflows)
+                    const fragment = document.createDocumentFragment();
 
-        // Ícones em SVG por tipo de relatório
-        const iconesRelatorios = {
-            "relatorio_executivo": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>`,
-            "matriz_serie_historica": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`,
-            "visitas_domiciliares": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>`,
-            "cadastros_territoriais": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>`,
-            "consultas_odontologicas": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>`,
-            "procedimentos_odonto": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>`,
-            "consultas_medicas": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 4v4m0 0v4m0-4h4m-4 0h-4m-5 7v4a2 2 0 002 2h6a2 2 0 002-2v-4M7 15a4 4 0 01-4-4V7a2 2 0 012-2h3m0 0a2 2 0 012 2v4a4 4 0 01-4 4z"></path></svg>`,
-            "relatorio_executivo": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>`,
-            "padrao": `<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>`
-        };
+                    const tagId = document.createElement('span');
+                    tagId.className = "bg-slate-800 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700";
+                    tagId.textContent = `ID: ${perfil.id_profissional}`;
+                    fragment.appendChild(tagId);
 
-        async function inicializarDashboard() {
-            try {
-                const resp = await fetch(`/api/relatorios/profissionais/${idProfissional}/perfil`);
-                if (!resp.ok) throw new Error("Erro ao carregar perfil do profissional.");
-                const perfil = await resp.json();
-
-                // 1. Atualizar Tags Dinâmicas do Profissional
-                document.getElementById('lbl-nome-prof').textContent = perfil.nome;
-                const containerTags = document.getElementById('container-tags');
-                containerTags.innerHTML = `
-                    <span class="bg-slate-800 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700">
-                        ID: ${perfil.id_profissional}
-                    </span>
-                `;
-                perfil.grupos.forEach(grupo => {
-                    const tag = document.createElement('span');
-                    tag.className = "bg-indigo-900/60 text-indigo-300 text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-700";
-                    tag.textContent = grupo;
-                    containerTags.appendChild(tag);
-                });
-
-                catalogoDisponivel = perfil.relatorios_habilitados || [];
-
-                // 2. Agrupar Relatórios Habilitados por Categoria
-                const categoriasAgrupadas = {};
-                catalogoDisponivel.forEach(rel => {
-                    if (!categoriasAgrupadas[rel.categoria]) {
-                        categoriasAgrupadas[rel.categoria] = [];
-                    }
-                    categoriasAgrupadas[rel.categoria].push(rel);
-                });
-
-                // 3. Renderizar Barra Lateral Dinâmica
-                const containerMenu = document.getElementById('menu-categorias');
-                containerMenu.innerHTML = '';
-
-                Object.entries(categoriasAgrupadas).forEach(([nomeCat, relatorios]) => {
-                    const bloco = document.createElement('div');
-                    bloco.className = "flex flex-col gap-1";
-
-                    const tituloCat = document.createElement('span');
-                    tituloCat.className = "text-[10px] font-black text-slate-500 uppercase tracking-widest px-3 mb-1 mt-3";
-                    tituloCat.textContent = nomeCat;
-                    bloco.appendChild(tituloCat);
-
-                    relatorios.forEach(rel => {
-                        const btn = document.createElement('button');
-                        btn.id = `btn-nav-${rel.id}`;
-                        btn.className = "btn-nav flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors";
-                        
-                        const iconSvg = iconesRelatorios[rel.id] || iconesRelatorios["padrao"];
-                        btn.innerHTML = `${iconSvg} <span class="leading-tight text-left">${rel.titulo}</span>`;
-                        
-                        btn.addEventListener('click', () => carregarRelatorioNoIframe(rel.id));
-                        bloco.appendChild(btn);
+                    perfil.grupos.forEach(grupo => {
+                        const tag = document.createElement('span');
+                        tag.className = "bg-indigo-900/60 text-indigo-300 text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-700";
+                        tag.textContent = grupo;
+                        fragment.appendChild(tag);
                     });
 
-                    containerMenu.appendChild(bloco);
+                    containerTags.innerHTML = '';
+                    containerTags.appendChild(fragment);
+
+                    catalogoDisponivel = perfil.relatorios_habilitados || [];
+
+                    // 2. Agrupar Relatórios Habilitados por Categoria
+                    const categoriasAgrupadas = catalogoDisponivel.reduce((acc, rel) => {
+                        acc[rel.categoria] = acc[rel.categoria] || [];
+                        acc[rel.categoria].push(rel);
+                        return acc;
+                    }, {});
+
+                    // 3. Renderizar Barra Lateral Dinâmica
+                    const containerMenu = document.getElementById('menu-categorias');
+                    containerMenu.innerHTML = '';
+
+                    Object.entries(categoriasAgrupadas).forEach(([nomeCat, relatorios]) => {
+                        const bloco = document.createElement('div');
+                        bloco.className = "flex flex-col gap-1";
+
+                        const tituloCat = document.createElement('span');
+                        tituloCat.className = "text-[10px] font-black text-slate-500 uppercase tracking-widest px-3 mb-1 mt-3";
+                        tituloCat.textContent = nomeCat;
+                        bloco.appendChild(tituloCat);
+
+                        relatorios.forEach(rel => {
+                            const btn = document.createElement('button');
+                            btn.id = `btn-nav-${rel.id}`;
+                            btn.className = "btn-nav flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors";
+
+                            const iconSvg = iconesRelatorios[rel.id] || iconesRelatorios["padrao"];
+                            btn.innerHTML = `${iconSvg} <span class="leading-tight text-left">${rel.titulo}</span>`;
+
+                            btn.addEventListener('click', () => carregarRelatorioNoIframe(rel.id));
+                            bloco.appendChild(btn);
+                        });
+
+                        containerMenu.appendChild(bloco);
+                    });
+
+                    // 4. Selecionar Relatório Padrão Inteligente
+                    let idPadrao = catalogoDisponivel[0]?.id;
+                    if (catalogoDisponivel.some(r => r.id === "consultas_medicas")) {
+                        idPadrao = "consultas_medicas";
+                    } else if (catalogoDisponivel.some(r => r.id === "consultas_odontologicas")) {
+                        idPadrao = "consultas_odontologicas";
+                    } else if (catalogoDisponivel.some(r => r.id === "relatorio_executivo")) {
+                        idPadrao = "relatorio_executivo";
+                    }
+
+                    if (idPadrao) {
+                        carregarRelatorioNoIframe(idPadrao);
+                    }
+
+                } catch (error) {
+                    console.error(error);
+                    document.getElementById('menu-categorias').innerHTML = `
+                <p class="text-xs text-rose-400 p-3 bg-rose-950/40 border border-rose-900 rounded">
+                    Erro ao carregar permissões do profissional.
+                </p>
+            `;
+                }
+            }
+
+            async function carregarLotacoesDropdown() {
+                const ano = document.getElementById('filtro-ano').value;
+                const selectCnes = document.getElementById('filtro-cnes');
+
+                try {
+                    selectCnes.disabled = true;
+                    selectCnes.innerHTML = '<option value="">Carregando Lotações...</option>';
+
+                    const resp = await fetch(`/api/relatorios/profissionais/${idProfissional}/lotacoes?ano=${encodeURIComponent(ano)}`);
+                    if (!resp.ok) throw new Error("Falha ao buscar lotações");
+                    const lotacoes = await resp.json();
+
+                    selectCnes.innerHTML = '<option value="">Consolidado (Todas as UBSs)</option>';
+
+                    const fragment = document.createDocumentFragment();
+                    lotacoes.forEach(lot => {
+                        const opt = document.createElement('option');
+                        opt.value = lot.cnes;
+                        opt.textContent = `${lot.ubs} (${lot.total_atendimentos} atds)`;
+                        fragment.appendChild(opt);
+                    });
+                    selectCnes.appendChild(fragment);
+                    selectCnes.disabled = false;
+                } catch (err) {
+                    console.error("Não foi possível carregar as lotações", err);
+                    selectCnes.innerHTML = '<option value="">Erro ao carregar unidades</option>';
+                }
+            }
+
+            function carregarRelatorioNoIframe(idTipo) {
+                relatorioAtivo = idTipo;
+
+                // Destaque visual do botão selecionado
+                document.querySelectorAll('.btn-nav').forEach(btn => {
+                    btn.className = "btn-nav flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors";
+                });
+                const btnAtivo = document.getElementById(`btn-nav-${idTipo}`);
+                if (btnAtivo) {
+                    btnAtivo.className = "btn-nav flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-xs font-bold text-white bg-indigo-600 shadow-md";
+                }
+
+                // Construção segura da URL usando URLSearchParams (Garante URL Encode e previne XSS)
+                const params = new URLSearchParams({
+                    tipo: idTipo,
+                    nome: nomeProfissional,
+                    ano: document.getElementById('filtro-ano').value,
+                    mes_inicio: document.getElementById('filtro-mes-inicio').value,
+                    mes_fim: document.getElementById('filtro-mes-fim').value
                 });
 
-                // 4. Selecionar Relatório Padrão Inteligente
-                let idPadrao = catalogoDisponivel[0]?.id;
-                if (catalogoDisponivel.some(r => r.id === "consultas_medicas")) {
-                    idPadrao = "consultas_medicas";
-                } else if (catalogoDisponivel.some(r => r.id === "consultas_odontologicas")) {
-                    idPadrao = "consultas_odontologicas";
-                } else if (catalogoDisponivel.some(r => r.id === "relatorio_executivo")) {
-                    idPadrao = "relatorio_executivo";
+                const cnesFiltro = document.getElementById('filtro-cnes').value;
+                if (cnesFiltro) {
+                    params.append('filtro_cnes', cnesFiltro);
                 }
 
-                if (idPadrao) {
-                    carregarRelatorioNoIframe(idPadrao);
-                }
-
-            } catch (error) {
-                console.error(error);
-                document.getElementById('menu-categorias').innerHTML = `
-                    <p class="text-xs text-rose-400 p-3 bg-rose-950/40 border border-rose-900 rounded">
-                        Erro ao carregar permissões do profissional.
-                    </p>
-                `;
+                const url = `/relatorio/${idProfissional}?${params.toString()}`;
+                document.getElementById('frame-relatorio').src = url;
             }
-        }
 
-        function carregarRelatorioNoIframe(idTipo) {
-            relatorioAtivo = idTipo;
+            document.addEventListener('DOMContentLoaded', async () => {
+                // Vincula o evento de submissão do form
+                document.getElementById('form-filtros-global').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    if (relatorioAtivo) carregarRelatorioNoIframe(relatorioAtivo);
+                });
 
-            // Destaque visual do botão selecionado
-            document.querySelectorAll('.btn-nav').forEach(btn => {
-                btn.className = "btn-nav flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors";
+                // Atualiza a lista de UBS caso mude o Ano
+                document.getElementById('filtro-ano').addEventListener('change', carregarLotacoesDropdown);
+
+                // Executa em paralelo as requisições iniciais para otimizar tempo de tela
+                await Promise.all([
+                    carregarLotacoesDropdown(),
+                    inicializarDashboard()
+                ]);
             });
-            const btnAtivo = document.getElementById(`btn-nav-${idTipo}`);
-            if (btnAtivo) {
-                btnAtivo.className = "btn-nav flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-md text-xs font-bold text-white bg-indigo-600 shadow-md";
-            }
-
-            // Atualiza os parâmetros no iframe
-            const ano = document.getElementById('filtro-ano').value;
-            const mesIn = document.getElementById('filtro-mes-inicio').value;
-            const mesFim = document.getElementById('filtro-mes-fim').value;
-
-            const url = `/relatorio/${idProfissional}?tipo=${idTipo}&nome=${encodeURIComponent(nomeProfissional)}&ano=${ano}&mes_inicio=${mesIn}&mes_fim=${mesFim}`;
-            document.getElementById('frame-relatorio').src = url;
-        }
-
-        // Submissão do filtro global
-        document.getElementById('form-filtros-global').addEventListener('submit', (e) => {
-            e.preventDefault();
-            if (relatorioAtivo) {
-                carregarRelatorioNoIframe(relatorioAtivo);
-            }
-        });
-
-        document.addEventListener('DOMContentLoaded', inicializarDashboard);
-    </script>
-</body>
+        </script>
+    </body>
 </html>
