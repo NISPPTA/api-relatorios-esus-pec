@@ -1267,11 +1267,43 @@ class RelatoriosService:
     # MÉTODOS DA SPRINT 3: AUDITORIA MÉDICA E CLÍNICA
     # ==========================================
 
-    async def buscar_lotacao_principal_medico(
+    async def buscar_lotacoes_historicas_profissional(
         self, session: AsyncSession, id_profissional: int, ano: int
-    ) -> dict[str, str]:
-        """Identifica a UBS e Equipe onde o profissional teve maior volume de atendimentos no ano."""
+    ) -> list[dict[str, Any]]:
+        """Mapeia todas as UBS e Equipes onde o profissional atuou no ano para preencher o Dropdown (Filtro)."""
         query = text("""
+            SELECT 
+                dus.nu_cnes AS cnes,
+                dus.no_unidade_saude AS ubs,
+                COALESCE(de.nu_ine, '-') AS ine,
+                COALESCE(de.no_equipe, 'Sem Equipe Vinculada') AS equipe,
+                COUNT(fai.co_seq_fat_atd_ind) AS total_atendimentos
+            FROM tb_fat_atendimento_individual fai
+            JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fai.co_dim_tempo
+            JOIN tb_dim_unidade_saude dus ON dus.co_seq_dim_unidade_saude = fai.co_dim_unidade_saude_1
+            LEFT JOIN tb_dim_equipe de ON de.co_seq_dim_equipe = fai.co_dim_equipe_1
+            WHERE fai.co_dim_profissional_1 = :id_prof
+              AND t.nu_ano = :ano
+            GROUP BY dus.nu_cnes, dus.no_unidade_saude, de.nu_ine, de.no_equipe
+            ORDER BY total_atendimentos DESC;
+        """)
+        resultado = await session.execute(
+            query, {"id_prof": id_profissional, "ano": ano}
+        )
+        return [dict(row._mapping) for row in resultado.all()]
+
+    async def buscar_lotacao_principal_medico(
+        self,
+        session: AsyncSession,
+        id_profissional: int,
+        ano: int,
+        mes_inicio: int,
+        mes_fim: int,
+        cnes: str | None = None,
+    ) -> dict[str, str]:
+        """Identifica a UBS e Equipe onde o profissional teve maior volume de atendimentos (Filtra por CNES se passado)."""
+        filtro_cnes = "AND dus.nu_cnes = :cnes" if cnes else ""
+        query = text(f"""
             SELECT 
                 dp.no_profissional AS nome,
                 cbo.no_cbo AS cbo,
@@ -1287,15 +1319,22 @@ class RelatoriosService:
             LEFT JOIN tb_dim_equipe de ON de.co_seq_dim_equipe = fai.co_dim_equipe_1
             WHERE fai.co_dim_profissional_1 = :id_prof 
               AND t.nu_ano = :ano
+              AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+              {filtro_cnes}
             GROUP BY dp.no_profissional, cbo.no_cbo, dus.no_unidade_saude, de.no_equipe, dus.nu_cnes, de.nu_ine
             ORDER BY COUNT(fai.co_seq_fat_atd_ind) DESC
             LIMIT 1;
         """)
-        resultado = (
-            (await session.execute(query, {"id_prof": id_profissional, "ano": ano}))
-            .mappings()
-            .first()
-        )
+        parametros = {
+            "id_prof": id_profissional,
+            "ano": ano,
+            "mes_inicio": mes_inicio,
+            "mes_fim": mes_fim,
+        }
+        if cnes:
+            parametros["cnes"] = cnes
+
+        resultado = (await session.execute(query, parametros)).mappings().first()
         if resultado:
             return dict(resultado)
         return {
@@ -1314,9 +1353,16 @@ class RelatoriosService:
         ano: int,
         mes_inicio: int,
         mes_fim: int,
+        cnes: str | None = None,
     ) -> dict[str, Any]:
-        """Resumo operacional de consultas, agendas, desfechos e Top CIAP-2."""
-        sql_resumo = """
+        """Resumo operacional de consultas, agendas, desfechos e Top CIAP-2 (Isolável por Lotação)."""
+        filtro_cnes = (
+            "AND fai.co_dim_unidade_saude_1 = (SELECT co_seq_dim_unidade_saude FROM tb_dim_unidade_saude WHERE nu_cnes = :cnes LIMIT 1)"
+            if cnes
+            else ""
+        )
+
+        sql_resumo = f"""
             SELECT 
                 COUNT(fai.co_seq_fat_atd_ind) AS total_atendimentos,
                 COUNT(CASE WHEN fai.co_dim_tipo_atendimento IN (1, 2, 5, 6) THEN 1 END) AS atendimentos_agendados,
@@ -1339,28 +1385,27 @@ class RelatoriosService:
             FROM tb_fat_atendimento_individual fai
             JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fai.co_dim_tempo
             WHERE fai.co_dim_profissional_1 = :id_prof
-              AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim;
+              AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+              {filtro_cnes};
         """
-        sql_ciap = """
+        sql_ciap = f"""
             WITH ciaps_explodidos AS (
                 SELECT unnest(string_to_array(trim(fai.ds_filtro_ciaps, '|'), '|')) AS codigo_ciap
                 FROM tb_fat_atendimento_individual fai
                 JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fai.co_dim_tempo
                 WHERE fai.co_dim_profissional_1 = :id_prof
                   AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+                  {filtro_cnes}
                   AND fai.ds_filtro_ciaps IS NOT NULL 
                   AND trim(fai.ds_filtro_ciaps, '|') <> '' 
             )
             SELECT 
-                c.codigo_ciap,
-                dc.no_ciap AS descricao,
-                COUNT(1) AS quantidade
+                c.codigo_ciap, dc.no_ciap AS descricao, COUNT(1) AS quantidade
             FROM ciaps_explodidos c
             JOIN tb_dim_ciap dc ON dc.nu_ciap = c.codigo_ciap
             WHERE trim(c.codigo_ciap) <> ''
             GROUP BY c.codigo_ciap, dc.no_ciap
-            ORDER BY quantidade DESC
-            LIMIT 10;
+            ORDER BY quantidade DESC LIMIT 10;
         """
         parametros = {
             "id_prof": id_profissional,
@@ -1368,6 +1413,9 @@ class RelatoriosService:
             "mes_inicio": mes_inicio,
             "mes_fim": mes_fim,
         }
+        if cnes:
+            parametros["cnes"] = cnes
+
         res_resumo = (
             (await session.execute(text(sql_resumo), parametros)).mappings().first()
         )
@@ -1385,39 +1433,41 @@ class RelatoriosService:
         ano: int,
         mes_inicio: int,
         mes_fim: int,
+        cnes: str | None = None,
     ) -> list[dict[str, Any]]:
-        """Extrai o ranking anual dos 10 CIDs mais diagnosticados pelo médico usando unnest."""
-        query = text("""
+        """Extrai o ranking de CIDs diagnosticados pelo médico (Isolável por Lotação)."""
+        filtro_cnes = (
+            "AND fai.co_dim_unidade_saude_1 = (SELECT co_seq_dim_unidade_saude FROM tb_dim_unidade_saude WHERE nu_cnes = :cnes LIMIT 1)"
+            if cnes
+            else ""
+        )
+        query = text(f"""
             WITH cids_explodidos AS (
                 SELECT unnest(string_to_array(trim(fai.ds_filtro_cids, '|'), '|')) AS codigo_cid
                 FROM tb_fat_atendimento_individual fai
                 JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fai.co_dim_tempo
                 WHERE fai.co_dim_profissional_1 = :id_prof
-                  AND t.nu_ano = :ano
-                  AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
-                  AND fai.ds_filtro_cids IS NOT NULL 
-                  AND trim(fai.ds_filtro_cids, '|') <> ''
+                  AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+                  {filtro_cnes}
+                  AND fai.ds_filtro_cids IS NOT NULL AND trim(fai.ds_filtro_cids, '|') <> ''
             )
             SELECT 
-                c.codigo_cid,
-                dc.no_cid AS doenca,
-                COUNT(1) AS volume_atendimentos
+                c.codigo_cid, dc.no_cid AS doenca, COUNT(1) AS volume_atendimentos
             FROM cids_explodidos c
             JOIN tb_dim_cid dc ON dc.nu_cid = c.codigo_cid
             WHERE trim(c.codigo_cid) <> ''
             GROUP BY c.codigo_cid, dc.no_cid
-            ORDER BY volume_atendimentos DESC
-            LIMIT 10;
+            ORDER BY volume_atendimentos DESC LIMIT 10;
         """)
-        resultado = await session.execute(
-            query,
-            {
-                "id_prof": id_profissional,
-                "ano": ano,
-                "mes_inicio": mes_inicio,
-                "mes_fim": mes_fim,
-            },
-        )
+        parametros = {
+            "id_prof": id_profissional,
+            "ano": ano,
+            "mes_inicio": mes_inicio,
+            "mes_fim": mes_fim,
+        }
+        if cnes:
+            parametros["cnes"] = cnes
+        resultado = await session.execute(query, parametros)
         return [dict(row._mapping) for row in resultado.all()]
 
     async def calcular_taxa_sinais_vitais_medico(
@@ -1427,9 +1477,15 @@ class RelatoriosService:
         ano: int,
         mes_inicio: int,
         mes_fim: int,
+        cnes: str | None = None,
     ) -> dict[str, Any]:
-        """Calcula o percentual de preenchimento de PA e Peso feito pelo próprio médico no PEC."""
-        query = text("""
+        """Calcula o percentual de preenchimento de PA e Peso (Isolável por Lotação)."""
+        filtro_cnes = (
+            "AND fai.co_dim_unidade_saude_1 = (SELECT co_seq_dim_unidade_saude FROM tb_dim_unidade_saude WHERE nu_cnes = :cnes LIMIT 1)"
+            if cnes
+            else ""
+        )
+        query = text(f"""
             SELECT 
                 COUNT(fai.co_seq_fat_atd_ind) AS total_consultas,
                 SUM(CASE WHEN fai.nu_pressao_sistolica IS NOT NULL THEN 1 ELSE 0 END) AS consultas_com_pa_aferida,
@@ -1439,24 +1495,19 @@ class RelatoriosService:
             FROM tb_fat_atendimento_individual fai
             JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fai.co_dim_tempo
             WHERE fai.co_dim_profissional_1 = :id_prof
-              AND t.nu_ano = :ano
-              AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim;
+              AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+              {filtro_cnes};
         """)
-        resultado = (
-            (
-                await session.execute(
-                    query,
-                    {
-                        "id_prof": id_profissional,
-                        "ano": ano,
-                        "mes_inicio": mes_inicio,
-                        "mes_fim": mes_fim,
-                    },
-                )
-            )
-            .mappings()
-            .first()
-        )
+        parametros = {
+            "id_prof": id_profissional,
+            "ano": ano,
+            "mes_inicio": mes_inicio,
+            "mes_fim": mes_fim,
+        }
+        if cnes:
+            parametros["cnes"] = cnes
+        resultado = (await session.execute(query, parametros)).mappings().first()
+
         if resultado and resultado["total_consultas"] > 0:
             return {
                 "total_consultas": resultado["total_consultas"],
@@ -1484,9 +1535,15 @@ class RelatoriosService:
         ano: int,
         mes_inicio: int,
         mes_fim: int,
+        cnes: str | None = None,
     ) -> dict[str, Any]:
         """Calcula a distribuição etária dinâmica (Idade = Atendimento - Nascimento), Sexo e Gestantes."""
-        query = text("""
+        filtro_cnes = (
+            "AND fai.co_dim_unidade_saude_1 = (SELECT co_seq_dim_unidade_saude FROM tb_dim_unidade_saude WHERE nu_cnes = :cnes LIMIT 1)"
+            if cnes
+            else ""
+        )
+        query = text(f"""
             SELECT 
                 COUNT(fai.co_seq_fat_atd_ind) AS total_atendimentos,
                 SUM(CASE WHEN EXTRACT(YEAR FROM AGE(fai.dt_inicial_atendimento, c.dt_nascimento)) BETWEEN 0 AND 2 THEN 1 ELSE 0 END) AS bebes_0_2,
@@ -1502,24 +1559,19 @@ class RelatoriosService:
             JOIN tb_fat_cidadao_pec fcp ON fcp.co_seq_fat_cidadao_pec = fai.co_fat_cidadao_pec
             JOIN tb_cidadao c ON c.co_seq_cidadao = fcp.co_cidadao
             WHERE fai.co_dim_profissional_1 = :id_prof
-              AND t.nu_ano = :ano
-              AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim;
+              AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+              {filtro_cnes};
         """)
-        resultado = (
-            (
-                await session.execute(
-                    query,
-                    {
-                        "id_prof": id_profissional,
-                        "ano": ano,
-                        "mes_inicio": mes_inicio,
-                        "mes_fim": mes_fim,
-                    },
-                )
-            )
-            .mappings()
-            .first()
-        )
+        parametros = {
+            "id_prof": id_profissional,
+            "ano": ano,
+            "mes_inicio": mes_inicio,
+            "mes_fim": mes_fim,
+        }
+        if cnes:
+            parametros["cnes"] = cnes
+        resultado = (await session.execute(query, parametros)).mappings().first()
+
         if resultado and resultado["total_atendimentos"] > 0:
             return dict(resultado)
         return {
@@ -1541,19 +1593,19 @@ class RelatoriosService:
         ano: int,
         mes_inicio: int,
         mes_fim: int,
+        cnes: str | None = None,
     ) -> dict[str, Any]:
-        """Cruza agendamentos (tb_agendado) para apurar absenteísmo real e corrigir falhas de fechamento de agenda."""
-        query = text("""
-            WITH profissional_dim AS (
-                SELECT nu_cns 
-                FROM tb_dim_profissional 
-                WHERE co_seq_dim_profissional = :id_prof 
-                LIMIT 1
-            ),
+        """Cruza agendamentos apurando absenteísmo real (Isolável por Lotação)."""
+        filtro_cnes = (
+            "AND l.co_ator_papel IN (SELECT co_ator_papel FROM tb_lotacao lo JOIN tb_dim_unidade_saude u ON u.co_seq_dim_unidade_saude = lo.co_unidade_saude WHERE u.nu_cnes = :cnes)"
+            if cnes
+            else ""
+        )
+        query = text(f"""
+            WITH profissional_dim AS (SELECT nu_cns FROM tb_dim_profissional WHERE co_seq_dim_profissional = :id_prof LIMIT 1),
             agenda_normalizada AS (
                 SELECT 
                     a.co_seq_agendado,
-                    a.dt_agendado,
                     sa.no_situacao_agendado AS status_original,
                     CASE 
                         WHEN sa.no_situacao_agendado IN ('ATENDIMENTO REALIZADO') THEN 'ATENDIDO'
@@ -1570,25 +1622,21 @@ class RelatoriosService:
                 JOIN profissional_dim pd ON pd.nu_cns = p.nu_cns
                 WHERE EXTRACT(YEAR FROM a.dt_agendado) = :ano
                   AND EXTRACT(MONTH FROM a.dt_agendado) BETWEEN :mes_inicio AND :mes_fim
+                  {filtro_cnes}
             )
-            SELECT 
-                classificacao_auditoria,
-                COUNT(co_seq_agendado) AS total
-            FROM agenda_normalizada
-            GROUP BY classificacao_auditoria;
+            SELECT classificacao_auditoria, COUNT(co_seq_agendado) AS total FROM agenda_normalizada GROUP BY classificacao_auditoria;
         """)
-        resultado = await session.execute(
-            query,
-            {
-                "id_prof": id_profissional,
-                "ano": ano,
-                "mes_inicio": mes_inicio,
-                "mes_fim": mes_fim,
-            },
-        )
+        parametros = {
+            "id_prof": id_profissional,
+            "ano": ano,
+            "mes_inicio": mes_inicio,
+            "mes_fim": mes_fim,
+        }
+        if cnes:
+            parametros["cnes"] = cnes
+        resultado = await session.execute(query, parametros)
         linhas = {row.classificacao_auditoria: row.total for row in resultado.all()}
 
-        # Garante coerção para int evitando TypeErrors (None) no cálculo de divisão
         atendidos = int(linhas.get("ATENDIDO", 0) or 0)
         faltas_confirmadas = int(linhas.get("FALTA_CONFIRMADA", 0) or 0)
         faltas_inercia = int(linhas.get("FALTA_POR_INERCIA", 0) or 0)
@@ -1616,11 +1664,9 @@ class RelatoriosService:
                 "agendamentos_futuros": agendados_futuros,
                 "taxa_absenteismo_pct": taxa_absenteismo,
             },
-            "alerta_gerencial": (
-                "Alto índice de agendas não fechadas"
-                if faltas_inercia > faltas_confirmadas
-                else "Fluxo de fechamento adequado"
-            ),
+            "alerta_gerencial": "Alto índice de agendas não fechadas"
+            if faltas_inercia > faltas_confirmadas
+            else "Fluxo de fechamento adequado",
         }
 
     async def buscar_top_procedimentos_avaliados_medico(
@@ -1631,42 +1677,44 @@ class RelatoriosService:
         mes_inicio: int,
         mes_fim: int,
         limite: int = 10,
+        cnes: str | None = None,
     ) -> list[dict[str, Any]]:
-        """Extrai o ranking de procedimentos e exames clínicos solicitados (ABEX e SIGTAP)."""
-        query = text("""
+        """Extrai o ranking de procedimentos e exames solicitados (Isolável por Lotação)."""
+        filtro_cnes = (
+            "AND fai.co_dim_unidade_saude_1 = (SELECT co_seq_dim_unidade_saude FROM tb_dim_unidade_saude WHERE nu_cnes = :cnes LIMIT 1)"
+            if cnes
+            else ""
+        )
+        query = text(f"""
             WITH proced_explodidos AS (
-                SELECT 
-                    unnest(string_to_array(trim(fai.ds_filtro_proced_avaliados, '|'), '|')) AS codigo_procedimento
+                SELECT unnest(string_to_array(trim(fai.ds_filtro_proced_avaliados, '|'), '|')) AS codigo_procedimento
                 FROM tb_fat_atendimento_individual fai
                 JOIN tb_dim_tempo t ON t.co_seq_dim_tempo = fai.co_dim_tempo
                 WHERE fai.co_dim_profissional_1 = :id_prof
-                  AND t.nu_ano = :ano
-                  AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
-                  AND fai.ds_filtro_proced_avaliados IS NOT NULL 
-                  AND trim(fai.ds_filtro_proced_avaliados, '|') <> ''
+                  AND t.nu_ano = :ano AND t.nu_mes BETWEEN :mes_inicio AND :mes_fim
+                  {filtro_cnes}
+                  AND fai.ds_filtro_proced_avaliados IS NOT NULL AND trim(fai.ds_filtro_proced_avaliados, '|') <> ''
             )
             SELECT 
-                c.codigo_procedimento,
-                COALESCE(dim.ds_proced, pr.no_proced, 'Procedimento Não Localizado') AS nome_procedimento,
+                c.codigo_procedimento, COALESCE(dim.ds_proced, pr.no_proced, 'Procedimento Não Localizado') AS nome_procedimento,
                 COUNT(1) AS total_realizado
             FROM proced_explodidos c
             LEFT JOIN tb_dim_procedimento dim ON dim.co_proced = c.codigo_procedimento
             LEFT JOIN tb_proced pr ON pr.co_proced = c.codigo_procedimento
             WHERE trim(c.codigo_procedimento) <> ''
             GROUP BY 1, 2
-            ORDER BY total_realizado DESC
-            LIMIT :limite;
+            ORDER BY total_realizado DESC LIMIT :limite;
         """)
-        resultado = await session.execute(
-            query,
-            {
-                "id_prof": id_profissional,
-                "ano": ano,
-                "mes_inicio": mes_inicio,
-                "mes_fim": mes_fim,
-                "limite": limite,
-            },
-        )
+        parametros = {
+            "id_prof": id_profissional,
+            "ano": ano,
+            "mes_inicio": mes_inicio,
+            "mes_fim": mes_fim,
+            "limite": limite,
+        }
+        if cnes:
+            parametros["cnes"] = cnes
+        resultado = await session.execute(query, parametros)
         return [dict(row._mapping) for row in resultado.all()]
 
 
