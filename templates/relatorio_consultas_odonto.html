@@ -189,17 +189,40 @@
             document.getElementById('select-mes-fim').value = "{{ filtro_mes_fim }}";
 
             function criarLinha(label, valor, totalRef, corT) {
-                if (valor === 0) return '';
+                if (valor === 0) return null;
                 const pct = totalRef > 0 ? ((valor / totalRef) * 100).toFixed(1) : "0.0";
-                return `
-                <div class="flex justify-between items-center py-1.5 border-b border-slate-50 last:border-0">
-                    <span class="text-xs text-slate-700 truncate pr-2" title="${label}">${label}</span>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <span class="text-[9px] font-bold text-slate-400 bg-slate-50 border border-slate-100 py-0.5 rounded w-10 text-center inline-block">${pct}%</span>
-                        <span class="text-xs font-black text-${corT}-800 bg-${corT}-100 py-0.5 rounded shadow-sm w-8 text-center inline-block">${valor}</span>
-                    </div>
-                </div>
-            `;
+                const linha = document.createElement('div');
+                linha.className = "flex justify-between items-center py-1.5 border-b border-slate-50 last:border-0";
+                const nome = document.createElement('span');
+                nome.className = "text-xs text-slate-700 truncate pr-2";
+                nome.title = label;
+                nome.textContent = label;
+
+                const valores = document.createElement('div');
+                valores.className = "flex items-center gap-2 shrink-0";
+                const percentual = document.createElement('span');
+                percentual.className = "text-[9px] font-bold text-slate-400 bg-slate-50 border border-slate-100 py-0.5 rounded w-10 text-center inline-block";
+                percentual.textContent = `${pct}%`;
+                const quantidade = document.createElement('span');
+                quantidade.className = `text-xs font-black text-${corT}-800 bg-${corT}-100 py-0.5 rounded shadow-sm w-8 text-center inline-block`;
+                quantidade.textContent = valor;
+                valores.append(percentual, quantidade);
+                linha.append(nome, valores);
+                return linha;
+            }
+
+            function renderizarLinhas(containerId, linhas, mensagemVazia) {
+                const container = document.getElementById(containerId);
+                const elementos = linhas
+                    .map(([label, valor, total, cor]) => criarLinha(label, valor, total, cor))
+                    .filter(linha => linha !== null);
+                if (elementos.length === 0) {
+                    const mensagem = document.createElement('p');
+                    mensagem.className = "text-xs text-slate-400 italic py-3 text-center";
+                    mensagem.textContent = mensagemVazia;
+                    elementos.push(mensagem);
+                }
+                container.replaceChildren(...elementos);
             }
 
             async function carregarDados() {
@@ -228,30 +251,30 @@
                     document.getElementById('pct-concluidos').textContent = total > 0 ? ((d.tratamentos_concluidos / total) * 100).toFixed(1) + "%" : "0%";
 
                     // Vigilância
-                    const htmlVigilancia =
-                        criarLinha("Queixa de Dor de Dente", d.queixa_dor_dente, total, "rose") +
-                        criarLinha("Abscesso Dentoalveolar", d.abscesso_dentoalveolar, total, "rose") +
-                        criarLinha("Traumatismo Dental", d.traumatismo_dental, total, "rose") +
-                        criarLinha("Lesão de Tecidos Moles", d.lesao_tecidos_moles, total, "rose") +
-                        criarLinha("Fluorose Dentária", d.fluorose_dentaria, total, "rose");
-                    document.getElementById('lista-vigilancia').innerHTML = htmlVigilancia || '<p class="text-xs text-slate-400 italic py-3 text-center">Nenhuma ocorrência de vigilância registrada.</p>';
+                    renderizarLinhas('lista-vigilancia', [
+                        ["Queixa de Dor de Dente", d.queixa_dor_dente, total, "rose"],
+                        ["Abscesso Dentoalveolar", d.abscesso_dentoalveolar, total, "rose"],
+                        ["Traumatismo Dental", d.traumatismo_dental, total, "rose"],
+                        ["Lesão de Tecidos Moles", d.lesao_tecidos_moles, total, "rose"],
+                        ["Fluorose Dentária", d.fluorose_dentaria, total, "rose"]
+                    ], "Nenhuma ocorrência de vigilância registrada.");
 
                     // Insumos
-                    const htmlInsumos =
-                        criarLinha("Escovas de Dente", d.escovas_entregues, total, "teal") +
-                        criarLinha("Cremes Dentais", d.cremes_entregues, total, "teal") +
-                        criarLinha("Fios Dentais", d.fios_entregues, total, "teal");
-                    document.getElementById('lista-insumos').innerHTML = htmlInsumos || '<p class="text-xs text-slate-400 italic py-3 text-center">Nenhum fornecimento registrado no período.</p>';
+                    renderizarLinhas('lista-insumos', [
+                        ["Escovas de Dente", d.escovas_entregues, total, "teal"],
+                        ["Cremes Dentais", d.cremes_entregues, total, "teal"],
+                        ["Fios Dentais", d.fios_entregues, total, "teal"]
+                    ], "Nenhum fornecimento registrado no período.");
 
                     // Encaminhamentos
-                    const htmlEncaminhamentos =
-                        criarLinha("Endodontia", d.encam_endodontia, total, "indigo") +
-                        criarLinha("Cirurgia Bucomaxilofacial", d.encam_bucomaxilo, total, "indigo") +
-                        criarLinha("Periodontia", d.encam_periodontia, total, "indigo") +
-                        criarLinha("Prótese Dentária", d.encam_protese, total, "indigo") +
-                        criarLinha("Odontopediatria", d.encam_odontopediatria, total, "indigo") +
-                        criarLinha("Estomatologia", d.encam_estomatologia, total, "indigo");
-                    document.getElementById('lista-encaminhamentos').innerHTML = htmlEncaminhamentos || '<p class="text-xs text-slate-400 italic py-3 text-center">Nenhum encaminhamento registrado.</p>';
+                    renderizarLinhas('lista-encaminhamentos', [
+                        ["Endodontia", d.encam_endodontia, total, "indigo"],
+                        ["Cirurgia Bucomaxilofacial", d.encam_bucomaxilo, total, "indigo"],
+                        ["Periodontia", d.encam_periodontia, total, "indigo"],
+                        ["Prótese Dentária", d.encam_protese, total, "indigo"],
+                        ["Odontopediatria", d.encam_odontopediatria, total, "indigo"],
+                        ["Estomatologia", d.encam_estomatologia, total, "indigo"]
+                    ], "Nenhum encaminhamento registrado.");
 
                 } catch (e) {
                     console.error(e);
