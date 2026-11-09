@@ -203,32 +203,50 @@
 
                         const cor = configCores[chave] || "slate";
 
-                        let linhasHtml = '';
+                        const card = document.createElement('div');
+                        card.className = `bg-white border-t-4 border-${cor}-500 rounded shadow-sm border border-slate-200 p-4 avoid-break`;
+
+                        const cabecalho = document.createElement('div');
+                        cabecalho.className = "flex justify-between items-end border-b border-slate-100 pb-2 mb-3";
+                        const titulo = document.createElement('h3');
+                        titulo.className = `text-xs font-black text-${cor}-800 uppercase tracking-widest`;
+                        titulo.textContent = catData.titulo;
+                        const totalCategoria = document.createElement('span');
+                        totalCategoria.className = "text-xs font-black text-slate-500";
+                        totalCategoria.textContent = `Total: ${catData.total}`;
+                        cabecalho.append(titulo, totalCategoria);
+
+                        const lista = document.createElement('div');
+                        lista.className = "flex flex-col";
                         catData.itens.sort((a, b) => b.quantidade - a.quantidade).forEach(item => {
                             const pct = data.resumo.total_procedimentos > 0 ? ((item.quantidade / data.resumo.total_procedimentos) * 100).toFixed(1) : "0.0";
-                            linhasHtml += `
-                            <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                                <div class="flex flex-col flex-1 pr-3">
-                                    <span class="text-[11px] font-bold text-slate-700 leading-tight">${item.procedimento}</span>
-                                    <span class="text-[9px] font-mono text-slate-400 mt-0.5">SIGTAP: ${item.codigo_sigtap}</span>
-                                </div>
-                                <div class="flex items-center gap-2 shrink-0">
-                                    <span class="text-[9px] font-bold text-slate-400 bg-white border border-slate-200 py-0.5 rounded w-10 text-center inline-block">${pct}%</span>
-                                    <span class="text-xs font-black text-${cor}-800 bg-${cor}-100 py-0.5 rounded shadow-sm w-10 text-center inline-block">${item.quantidade}</span>
-                                </div>
-                            </div>
-                        `;
-                        });
+                            const linha = document.createElement('div');
+                            linha.className = "flex justify-between items-center py-2 border-b border-slate-100 last:border-0 hover:bg-slate-50";
 
-                        container.innerHTML += `
-                        <div class="bg-white border-t-4 border-${cor}-500 rounded shadow-sm border border-slate-200 p-4 avoid-break">
-                            <div class="flex justify-between items-end border-b border-slate-100 pb-2 mb-3">
-                                <h3 class="text-xs font-black text-${cor}-800 uppercase tracking-widest">${catData.titulo}</h3>
-                                <span class="text-xs font-black text-slate-500">Total: ${catData.total}</span>
-                            </div>
-                            <div class="flex flex-col">${linhasHtml}</div>
-                        </div>
-                    `;
+                            const descricao = document.createElement('div');
+                            descricao.className = "flex flex-col flex-1 pr-3";
+                            const nomeProcedimento = document.createElement('span');
+                            nomeProcedimento.className = "text-[11px] font-bold text-slate-700 leading-tight";
+                            nomeProcedimento.textContent = item.procedimento;
+                            const codigoProcedimento = document.createElement('span');
+                            codigoProcedimento.className = "text-[9px] font-mono text-slate-400 mt-0.5";
+                            codigoProcedimento.textContent = `SIGTAP: ${item.codigo_sigtap}`;
+                            descricao.append(nomeProcedimento, codigoProcedimento);
+
+                            const valores = document.createElement('div');
+                            valores.className = "flex items-center gap-2 shrink-0";
+                            const percentual = document.createElement('span');
+                            percentual.className = "text-[9px] font-bold text-slate-400 bg-white border border-slate-200 py-0.5 rounded w-10 text-center inline-block";
+                            percentual.textContent = `${pct}%`;
+                            const quantidade = document.createElement('span');
+                            quantidade.className = `text-xs font-black text-${cor}-800 bg-${cor}-100 py-0.5 rounded shadow-sm w-10 text-center inline-block`;
+                            quantidade.textContent = item.quantidade;
+                            valores.append(percentual, quantidade);
+                            linha.append(descricao, valores);
+                            lista.appendChild(linha);
+                        });
+                        card.append(cabecalho, lista);
+                        container.appendChild(card);
                     });
 
                 } catch (e) {
