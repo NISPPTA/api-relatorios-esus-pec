@@ -350,15 +350,21 @@
                     dados.evolucao_mensal.forEach(m => {
                         const tr = document.createElement('tr');
                         tr.className = "border-b";
-                        tr.innerHTML = `
-                    <td class="px-3 py-2 font-medium">${m.mes}/${ano}</td>
-                    <td class="px-3 py-2 text-right">${m.dias_calendario}</td>
-                    <td class="px-3 py-2 text-right">${m.dias_uteis}</td>
-                    <td class="px-3 py-2 text-right">${m.dias_com_registro}</td>
-                    <td class="px-3 py-2 text-right">${m.percentual_dias_efetivos}%</td>
-                    <td class="px-3 py-2 text-right font-medium">${(m.quantidade || 0).toLocaleString('pt-BR')}</td>
-                    <td class="px-3 py-2 text-right">${m.media_dia > 0 ? m.media_dia : '-'}</td>
-                `;
+                        const valores = [
+                            [`${m.mes}/${ano}`, "px-3 py-2 font-medium"],
+                            [m.dias_calendario, "px-3 py-2 text-right"],
+                            [m.dias_uteis, "px-3 py-2 text-right"],
+                            [m.dias_com_registro, "px-3 py-2 text-right"],
+                            [`${m.percentual_dias_efetivos}%`, "px-3 py-2 text-right"],
+                            [(m.quantidade || 0).toLocaleString('pt-BR'), "px-3 py-2 text-right font-medium"],
+                            [m.media_dia > 0 ? m.media_dia : '-', "px-3 py-2 text-right"]
+                        ];
+                        valores.forEach(([valor, classe]) => {
+                            const td = document.createElement('td');
+                            td.className = classe;
+                            td.textContent = valor;
+                            tr.appendChild(td);
+                        });
                         tbody.appendChild(tr);
                     });
 
@@ -373,7 +379,25 @@
                     // Seção 3 - Distribuição dos Registros Diários
                     const txtDist = document.getElementById('txt-distribuicao-resumo');
                     if (dados.resumo.maior_volume_dia.quantidade > 0) {
-                        txtDist.innerHTML = `Foram identificados <strong>${dados.resumo.dias_com_registro} dias com movimentação</strong> no período. O maior volume diário ocorreu em <strong>${dados.resumo.maior_volume_dia.data}</strong>, com <strong>${dados.resumo.maior_volume_dia.quantidade} procedimentos</strong>.`;
+                        txtDist.replaceChildren();
+                        const trechos = [
+                            ["Foram identificados ", false],
+                            [`${dados.resumo.dias_com_registro} dias com movimentação`, true],
+                            [" no período. O maior volume diário ocorreu em ", false],
+                            [dados.resumo.maior_volume_dia.data, true],
+                            [", com ", false],
+                            [`${dados.resumo.maior_volume_dia.quantidade} procedimentos`, true],
+                            [".", false]
+                        ];
+                        trechos.forEach(([texto, destaque]) => {
+                            if (destaque) {
+                                const strong = document.createElement('strong');
+                                strong.textContent = texto;
+                                txtDist.appendChild(strong);
+                            } else {
+                                txtDist.appendChild(document.createTextNode(texto));
+                            }
+                        });
                     } else {
                         txtDist.textContent = "Não foram encontrados registros diários de produção no período informado.";
                     }
@@ -383,10 +407,13 @@
                     dados.registros_diarios.forEach(d => {
                         const card = document.createElement('div');
                         card.className = "flex justify-between items-center p-2 rounded bg-gray-50 border border-gray-200";
-                        card.innerHTML = `
-                    <span class="font-mono text-gray-700">${d.data}</span>
-                    <span class="font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">${d.quantidade}</span>
-                `;
+                        const dataRegistro = document.createElement('span');
+                        dataRegistro.className = "font-mono text-gray-700";
+                        dataRegistro.textContent = d.data;
+                        const quantidade = document.createElement('span');
+                        quantidade.className = "font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded";
+                        quantidade.textContent = d.quantidade;
+                        card.append(dataRegistro, quantidade);
                         gridDias.appendChild(card);
                     });
 
@@ -396,11 +423,16 @@
                     dados.detalhamento.forEach(s => {
                         const tr = document.createElement('tr');
                         tr.className = "border-b";
-                        tr.innerHTML = `
-                    <td class="px-4 py-2 font-mono text-gray-500">${s.codigo_sigtap}</td>
-                    <td class="px-4 py-2 font-medium">${s.procedimento}</td>
-                    <td class="px-4 py-2 text-right font-bold">${(s.quantidade || 0).toLocaleString('pt-BR')}</td>
-                `;
+                        [
+                            [s.codigo_sigtap, "px-4 py-2 font-mono text-gray-500"],
+                            [s.procedimento, "px-4 py-2 font-medium"],
+                            [(s.quantidade || 0).toLocaleString('pt-BR'), "px-4 py-2 text-right font-bold"]
+                        ].forEach(([valor, classe]) => {
+                            const td = document.createElement('td');
+                            td.className = classe;
+                            td.textContent = valor;
+                            tr.appendChild(td);
+                        });
                         tbodySigtap.appendChild(tr);
                     });
 
