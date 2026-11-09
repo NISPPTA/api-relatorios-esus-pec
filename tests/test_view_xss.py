@@ -6,7 +6,6 @@ from urllib.parse import quote
 import pytest
 from fastapi.testclient import TestClient
 
-
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATES = ROOT / "templates"
 
@@ -52,7 +51,10 @@ def test_page_parameters_are_rendered_as_escaped_text(
         (
             "relatorio_visitas.html",
             ("${item.desfecho}", "${i.nome}"),
-            ("celulaDesfecho.textContent = item.desfecho", "nomeItem.textContent = i.nome"),
+            (
+                "celulaDesfecho.textContent = item.desfecho",
+                "nomeItem.textContent = i.nome",
+            ),
         ),
         (
             "relatorio_procedimentos.html",
@@ -62,7 +64,10 @@ def test_page_parameters_are_rendered_as_escaped_text(
         (
             "relatorio_procedimentos_odonto.html",
             ("${item.procedimento}",),
-            ("nomeProcedimento.textContent = item.procedimento", "codigoProcedimento.textContent ="),
+            (
+                "nomeProcedimento.textContent = item.procedimento",
+                "codigoProcedimento.textContent =",
+            ),
         ),
         (
             "relatorio_consultas_medicas.html",
@@ -83,7 +88,10 @@ def test_page_parameters_are_rendered_as_escaped_text(
         (
             "dashboard.html",
             ("${rel.titulo}",),
-            ("titulo.textContent = rel.titulo", "nomeProfissional = {{ nome_profissional | tojson }}"),
+            (
+                "titulo.textContent = rel.titulo",
+                "nomeProfissional = {{ nome_profissional | tojson }}",
+            ),
         ),
         (
             "relatorio_matriz.html",
