@@ -5,9 +5,9 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi.testclient import TestClient
 
+from src.main import create_app
 from src.modules.relatorios.schemas import ProfissionalPerfil, RelatorioDisponivel
 from src.modules.relatorios.service import service
-from src.main import create_app
 
 
 def perfil_sintetico() -> ProfissionalPerfil:
@@ -91,9 +91,7 @@ def test_list_professionals_returns_page_and_total(client: TestClient, monkeypat
     mock = AsyncMock(return_value=payload)
     monkeypatch.setattr(service, "listar_profissionais", mock)
 
-    response = client.get(
-        "/api/relatorios/profissionais?q=Sintético&page=2&size=10"
-    )
+    response = client.get("/api/relatorios/profissionais?q=Sintético&page=2&size=10")
 
     assert response.status_code == 200
     assert response.json() == payload
@@ -115,15 +113,11 @@ def test_professional_service_applies_page_offset_without_database() -> None:
             "total_registros": 11,
         }
     ]
-    result = SimpleNamespace(
-        mappings=lambda: SimpleNamespace(all=lambda: rows)
-    )
+    result = SimpleNamespace(mappings=lambda: SimpleNamespace(all=lambda: rows))
     session = SimpleNamespace(execute=AsyncMock(return_value=result))
 
     response = asyncio.run(
-        service.listar_profissionais(
-            session, busca="Sintético", pagina=2, tamanho=5
-        )
+        service.listar_profissionais(session, busca="Sintético", pagina=2, tamanho=5)
     )
 
     assert response["total"] == 11
@@ -180,49 +174,63 @@ def test_missing_professional_returns_404(client: TestClient, monkeypatch) -> No
             200,
         ),
         (
-            "/api/relatorios/profissionais/12345/matriz-producao"
-            "?ano=2026&mes_inicio=1&mes_fim=12",
+            (
+                "/api/relatorios/profissionais/12345/matriz-producao"
+                "?ano=2026&mes_inicio=1&mes_fim=12"
+            ),
             "gerar_matriz_producao",
             200,
         ),
         (
-            "/api/relatorios/profissionais/12345/visitas"
-            "?ano=2026&mes_inicio=1&mes_fim=12",
+            (
+                "/api/relatorios/profissionais/12345/visitas"
+                "?ano=2026&mes_inicio=1&mes_fim=12"
+            ),
             "gerar_relatorio_visitas",
             200,
         ),
         (
-            "/api/relatorios/profissionais/12345/procedimentos"
-            "?ano=2026&mes_inicio=1&mes_fim=12",
+            (
+                "/api/relatorios/profissionais/12345/procedimentos"
+                "?ano=2026&mes_inicio=1&mes_fim=12"
+            ),
             "gerar_relatorio_procedimentos",
             200,
         ),
         (
-            "/api/relatorios/profissionais/12345/cadastros-territorio"
-            "?ano=2026&mes_inicio=1&mes_fim=12",
+            (
+                "/api/relatorios/profissionais/12345/cadastros-territorio"
+                "?ano=2026&mes_inicio=1&mes_fim=12"
+            ),
             "gerar_relatorio_cadastros",
             200,
         ),
         (
-            "/api/relatorios/profissionais/12345/relatorio-executivo"
-            "?ano=2026&mes_inicio=1&mes_fim=12",
+            (
+                "/api/relatorios/profissionais/12345/relatorio-executivo"
+                "?ano=2026&mes_inicio=1&mes_fim=12"
+            ),
             "gerar_relatorio_executivo",
             200,
         ),
         (
-            "/api/relatorios/profissionais/12345/consultas-odonto"
-            "?ano=2026&mes_inicio=1&mes_fim=12",
+            (
+                "/api/relatorios/profissionais/12345/consultas-odonto"
+                "?ano=2026&mes_inicio=1&mes_fim=12"
+            ),
             "gerar_relatorio_consultas_odonto",
             200,
         ),
         (
-            "/api/relatorios/profissionais/12345/procedimentos-odonto"
-            "?ano=2026&mes_inicio=1&mes_fim=12",
+            (
+                "/api/relatorios/profissionais/12345/procedimentos-odonto"
+                "?ano=2026&mes_inicio=1&mes_fim=12"
+            ),
             "gerar_relatorio_procedimentos_odonto",
             200,
         ),
         (
-            "/api/relatorios/profissionais/12345/lotacoes?ano=2026",
+            ("/api/relatorios/profissionais/12345/lotacoes?ano=2026"),
             "buscar_lotacoes_historicas_profissional",
             200,
         ),
@@ -314,12 +322,15 @@ def test_professional_list_rejects_invalid_pagination(
 @pytest.mark.parametrize(
     "path",
     [
-        "/api/relatorios/profissionais/12345/matriz-producao"
-        "?ano=2019&mes_inicio=1&mes_fim=12",
-        "/api/relatorios/profissionais/12345/matriz-producao"
-        "?ano=2026&mes_inicio=0&mes_fim=12",
-        "/api/relatorios/profissionais/12345/visitas"
-        "?ano=2026&mes_inicio=1&mes_fim=13",
+        (
+            "/api/relatorios/profissionais/12345/matriz-producao"
+            "?ano=2019&mes_inicio=1&mes_fim=12"
+        ),
+        (
+            "/api/relatorios/profissionais/12345/matriz-producao"
+            "?ano=2026&mes_inicio=0&mes_fim=12"
+        ),
+        "/api/relatorios/profissionais/12345/visitas?ano=2026&mes_inicio=1&mes_fim=13",
         "/api/relatorios/profissionais/nao-numerico/perfil",
     ],
 )
