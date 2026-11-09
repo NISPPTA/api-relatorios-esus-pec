@@ -224,35 +224,52 @@
                 const cor = configCores[dados.resultado.status.toLowerCase()] || configCores["amarelo"];
                 const dica = dicasLogica[chaveDica];
 
-                return `
-                <div class="flex flex-col bg-white border-l-4 ${cor.border} rounded-r-lg shadow-sm border p-5 avoid-break relative group">
-                    
-                    <!-- Ícone de Interrogação (Hover para Tooltip) -->
-                    <div class="absolute top-4 right-4 no-print cursor-help">
-                        <svg class="w-5 h-5 text-slate-300 hover:text-indigo-500 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        
-                        <!-- Tooltip CSS puro -->
-                        <div class="opacity-0 invisible group-hover:opacity-100 group-hover:visible absolute right-0 top-6 w-72 bg-slate-900 text-white text-xs rounded-lg shadow-2xl p-4 transition-all z-50 border border-slate-700 pointer-events-none">
-                            <p class="font-bold text-indigo-400 mb-1 uppercase tracking-wider">Origem dos Dados:</p>
-                            <p class="mb-3 text-slate-300 leading-relaxed">${dica.fonte}</p>
-                            <p class="font-bold text-emerald-400 mb-1 uppercase tracking-wider">Critério de Avaliação:</p>
-                            <p class="text-slate-300 leading-relaxed">${dica.criterio}</p>
-                        </div>
-                    </div>
+                const criarElemento = (tag, classe, texto) => {
+                    const elemento = document.createElement(tag);
+                    elemento.className = classe;
+                    if (texto !== undefined) elemento.textContent = texto;
+                    return elemento;
+                };
 
-                    <div class="flex items-center gap-3 mb-2">
-                        ${cor.icon}
-                        <h4 class="text-sm font-black text-slate-800 uppercase tracking-wide">${titulo}</h4>
-                        <span class="text-[9px] font-black px-2 py-0.5 rounded ${cor.badge} border border-slate-200 uppercase">${dados.resultado.status}</span>
-                    </div>
-                    
-                    <div class="ml-9">
-                        <p class="text-[11px] font-semibold text-slate-500 mb-2">${dados.diretriz}</p>
-                        <p class="text-sm font-bold ${cor.text} bg-slate-50 px-3 py-2 rounded-md border border-slate-100 inline-block shadow-sm">${dados.resultado.msg}</p>
-                        <p class="text-[10px] text-slate-400 font-medium mt-3">📊 Evidência Bruta: ${dados.numeros}</p>
-                    </div>
-                </div>
-            `;
+                const card = criarElemento(
+                    'div',
+                    `flex flex-col bg-white border-l-4 ${cor.border} rounded-r-lg shadow-sm border p-5 avoid-break relative group`
+                );
+                const tooltipWrapper = criarElemento('div', "absolute top-4 right-4 no-print cursor-help");
+                const tooltipIcon = new DOMParser().parseFromString(
+                    '<svg class="w-5 h-5 text-slate-300 hover:text-indigo-500 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+                    'image/svg+xml'
+                ).documentElement;
+                tooltipWrapper.appendChild(document.importNode(tooltipIcon, true));
+
+                const tooltip = criarElemento(
+                    'div',
+                    "opacity-0 invisible group-hover:opacity-100 group-hover:visible absolute right-0 top-6 w-72 bg-slate-900 text-white text-xs rounded-lg shadow-2xl p-4 transition-all z-50 border border-slate-700 pointer-events-none"
+                );
+                tooltip.append(
+                    criarElemento('p', "font-bold text-indigo-400 mb-1 uppercase tracking-wider", "Origem dos Dados:"),
+                    criarElemento('p', "mb-3 text-slate-300 leading-relaxed", dica.fonte),
+                    criarElemento('p', "font-bold text-emerald-400 mb-1 uppercase tracking-wider", "Critério de Avaliação:"),
+                    criarElemento('p', "text-slate-300 leading-relaxed", dica.criterio)
+                );
+                tooltipWrapper.appendChild(tooltip);
+
+                const cabecalho = criarElemento('div', "flex items-center gap-3 mb-2");
+                const iconeStatus = new DOMParser().parseFromString(cor.icon, 'image/svg+xml').documentElement;
+                cabecalho.append(
+                    document.importNode(iconeStatus, true),
+                    criarElemento('h4', "text-sm font-black text-slate-800 uppercase tracking-wide", titulo),
+                    criarElemento('span', `text-[9px] font-black px-2 py-0.5 rounded ${cor.badge} border border-slate-200 uppercase`, dados.resultado.status)
+                );
+
+                const conteudo = criarElemento('div', "ml-9");
+                conteudo.append(
+                    criarElemento('p', "text-[11px] font-semibold text-slate-500 mb-2", dados.diretriz),
+                    criarElemento('p', `text-sm font-bold ${cor.text} bg-slate-50 px-3 py-2 rounded-md border border-slate-100 inline-block shadow-sm`, dados.resultado.msg),
+                    criarElemento('p', "text-[10px] text-slate-400 font-medium mt-3", `📊 Evidência Bruta: ${dados.numeros}`)
+                );
+                card.append(tooltipWrapper, cabecalho, conteudo);
+                return card;
             }
 
             async function carregarPainelExecutivo() {
@@ -276,12 +293,12 @@
                     document.getElementById('kpi-totais').textContent = d.meta_informacao.visitas_totais;
                     document.getElementById('kpi-taxa').textContent = d.meta_informacao.taxa_cobertura_habitante;
 
-                    document.getElementById('container-auditoria').innerHTML = `
-                    ${criarCardAuditoria("Cobertura Territorial (PNAB)", "pnab", d.auditoria.pnab)}
-                    ${criarCardAuditoria("Proteção Materno-Infantil", "materno_infantil", d.auditoria.materno_infantil)}
-                    ${criarCardAuditoria("Vigilância de Doenças Crônicas", "cronicos", d.auditoria.cronicos)}
-                    ${criarCardAuditoria("Equidade e Acessibilidade", "equidade", d.auditoria.equidade)}
-                `;
+                    document.getElementById('container-auditoria').replaceChildren(
+                        criarCardAuditoria("Cobertura Territorial (PNAB)", "pnab", d.auditoria.pnab),
+                        criarCardAuditoria("Proteção Materno-Infantil", "materno_infantil", d.auditoria.materno_infantil),
+                        criarCardAuditoria("Vigilância de Doenças Crônicas", "cronicos", d.auditoria.cronicos),
+                        criarCardAuditoria("Equidade e Acessibilidade", "equidade", d.auditoria.equidade)
+                    );
                 } catch (e) {
                     document.getElementById('loading').innerHTML = '<p class="text-rose-600 font-bold">Erro ao compilar auditoria.</p>';
                 }
