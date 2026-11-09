@@ -521,14 +521,24 @@
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-slate-50 transition-colors";
                         const isZ760 = c.codigo_cid === 'Z760';
-                        tr.innerHTML = `
-                    <td class="py-2.5 font-mono font-bold ${isZ760 ? 'text-amber-600' : 'text-indigo-600'}">${c.codigo_cid}</td>
-                    <td class="py-2.5 text-slate-700 ${isZ760 ? 'font-bold' : ''}">
-                        ${c.doenca}
-                        ${isZ760 ? '<span class="ml-1.5 text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-black">Renovação de Receita</span>' : ''}
-                    </td>
-                    <td class="py-2.5 text-right font-black text-slate-900">${(c.volume_atendimentos || 0).toLocaleString('pt-BR')}</td>
-                `;
+                        const codigo = document.createElement('td');
+                        codigo.className = `py-2.5 font-mono font-bold ${isZ760 ? 'text-amber-600' : 'text-indigo-600'}`;
+                        codigo.textContent = c.codigo_cid;
+
+                        const descricao = document.createElement('td');
+                        descricao.className = `py-2.5 text-slate-700 ${isZ760 ? 'font-bold' : ''}`;
+                        descricao.appendChild(document.createTextNode(c.doenca));
+                        if (isZ760) {
+                            const observacao = document.createElement('span');
+                            observacao.className = "ml-1.5 text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-black";
+                            observacao.textContent = "Renovação de Receita";
+                            descricao.appendChild(observacao);
+                        }
+
+                        const volume = document.createElement('td');
+                        volume.className = "py-2.5 text-right font-black text-slate-900";
+                        volume.textContent = (c.volume_atendimentos || 0).toLocaleString('pt-BR');
+                        tr.append(codigo, descricao, volume);
                         tbodyCids.appendChild(tr);
                     });
                 }
@@ -543,11 +553,16 @@
                     ciaps.forEach(ci => {
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-slate-50 transition-colors";
-                        tr.innerHTML = `
-                    <td class="py-2 font-mono font-bold text-emerald-700">${ci.codigo_ciap}</td>
-                    <td class="py-2 text-slate-700">${ci.descricao}</td>
-                    <td class="py-2 text-right font-black text-slate-900">${(ci.quantidade || 0).toLocaleString('pt-BR')}</td>
-                `;
+                        [
+                            [ci.codigo_ciap, "py-2 font-mono font-bold text-emerald-700"],
+                            [ci.descricao, "py-2 text-slate-700"],
+                            [(ci.quantidade || 0).toLocaleString('pt-BR'), "py-2 text-right font-black text-slate-900"]
+                        ].forEach(([valor, classe]) => {
+                            const td = document.createElement('td');
+                            td.className = classe;
+                            td.textContent = valor;
+                            tr.appendChild(td);
+                        });
                         tbodyCiaps.appendChild(tr);
                     });
                 }
@@ -562,11 +577,16 @@
                     procs.forEach(p => {
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-slate-50 transition-colors";
-                        tr.innerHTML = `
-                    <td class="py-2 font-mono font-bold text-slate-500">${p.codigo_procedimento}</td>
-                    <td class="py-2 text-slate-700">${p.nome_procedimento}</td>
-                    <td class="py-2 text-right font-black text-slate-900">${(p.total_realizado || 0).toLocaleString('pt-BR')}</td>
-                `;
+                        [
+                            [p.codigo_procedimento, "py-2 font-mono font-bold text-slate-500"],
+                            [p.nome_procedimento, "py-2 text-slate-700"],
+                            [(p.total_realizado || 0).toLocaleString('pt-BR'), "py-2 text-right font-black text-slate-900"]
+                        ].forEach(([valor, classe]) => {
+                            const td = document.createElement('td');
+                            td.className = classe;
+                            td.textContent = valor;
+                            tr.appendChild(td);
+                        });
                         tbodyProced.appendChild(tr);
                     });
                 }
