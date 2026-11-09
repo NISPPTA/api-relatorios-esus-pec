@@ -407,13 +407,21 @@
                         }
 
                         const pct = totalVisitas > 0 ? ((item.total / totalVisitas) * 100).toFixed(1) : 0;
-                        tbodyDesfechos.innerHTML += `
-                    <tr>
-                        <td class="px-3 py-2 font-medium">${item.desfecho}</td>
-                        <td class="px-3 py-2 text-right font-bold text-gray-900">${item.total}</td>
-                        <td class="px-3 py-2 text-right text-gray-500">${pct}%</td>
-                    </tr>
-                `;
+                        const linha = document.createElement('tr');
+                        const celulaDesfecho = document.createElement('td');
+                        celulaDesfecho.className = "px-3 py-2 font-medium";
+                        celulaDesfecho.textContent = item.desfecho;
+
+                        const celulaTotal = document.createElement('td');
+                        celulaTotal.className = "px-3 py-2 text-right font-bold text-gray-900";
+                        celulaTotal.textContent = item.total;
+
+                        const celulaPercentual = document.createElement('td');
+                        celulaPercentual.className = "px-3 py-2 text-right text-gray-500";
+                        celulaPercentual.textContent = `${pct}%`;
+
+                        linha.append(celulaDesfecho, celulaTotal, celulaPercentual);
+                        tbodyDesfechos.appendChild(linha);
                     });
 
                     document.getElementById('ind-sucesso').textContent = visitasRealizadas;
@@ -471,30 +479,44 @@
                     });
 
                     Object.entries(categorias).forEach(([nomeCat, dataCat]) => {
-                        let linhasItens = '';
+                        const card = document.createElement('div');
+                        card.className = `bg-white border-t-4 border-${dataCat.color}-500 rounded shadow-sm border border-gray-200 p-3 avoid-break hover:shadow-md transition-shadow`;
+                        const tituloCategoria = document.createElement('h4');
+                        tituloCategoria.className = `text-[10px] font-black text-${dataCat.color}-800 uppercase tracking-widest mb-3`;
+                        tituloCategoria.textContent = nomeCat;
+
+                        const listaItens = document.createElement('div');
+                        listaItens.className = "flex flex-col";
                         dataCat.itens.sort((a, b) => b.total - a.total).forEach(i => {
 
                             // Cálculo da Percentagem Relativa ao Esforço de Campo
                             const pctVisitas = totalVisitas > 0 ? ((i.total / totalVisitas) * 100).toFixed(1) : "0.0";
 
                             // O segredo do alinhamento: w-12 (48px) para % e w-10 (40px) para o Total, forçando formato de coluna de tabela
-                            linhasItens += `
-                        <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
-                            <span class="text-xs text-gray-700 truncate flex-1 pr-2" title="${i.nome}">${i.nome}</span>
-                            <div class="flex items-center gap-2 shrink-0">
-                                <span class="text-[10px] font-bold text-gray-500 bg-white border border-gray-200 py-0.5 rounded w-12 text-center inline-block shadow-sm">${pctVisitas}%</span>
-                                <span class="text-xs font-black text-${dataCat.color}-800 bg-${dataCat.color}-100 py-0.5 rounded shadow-sm w-10 text-center inline-block">${i.total}</span>
-                            </div>
-                        </div>
-                    `;
+                            const linha = document.createElement('div');
+                            linha.className = "flex justify-between items-center py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors";
+
+                            const nomeItem = document.createElement('span');
+                            nomeItem.className = "text-xs text-gray-700 truncate flex-1 pr-2";
+                            nomeItem.title = i.nome;
+                            nomeItem.textContent = i.nome;
+
+                            const valores = document.createElement('div');
+                            valores.className = "flex items-center gap-2 shrink-0";
+                            const percentual = document.createElement('span');
+                            percentual.className = "text-[10px] font-bold text-gray-500 bg-white border border-gray-200 py-0.5 rounded w-12 text-center inline-block shadow-sm";
+                            percentual.textContent = `${pctVisitas}%`;
+
+                            const total = document.createElement('span');
+                            total.className = `text-xs font-black text-${dataCat.color}-800 bg-${dataCat.color}-100 py-0.5 rounded shadow-sm w-10 text-center inline-block`;
+                            total.textContent = i.total;
+                            valores.append(percentual, total);
+                            linha.append(nomeItem, valores);
+                            listaItens.appendChild(linha);
                         });
 
-                        containerMotivos.innerHTML += `
-                    <div class="bg-white border-t-4 border-${dataCat.color}-500 rounded shadow-sm border border-gray-200 p-3 avoid-break hover:shadow-md transition-shadow">
-                        <h4 class="text-[10px] font-black text-${dataCat.color}-800 uppercase tracking-widest mb-3">${nomeCat}</h4>
-                        <div class="flex flex-col">${linhasItens}</div>
-                    </div>
-                `;
+                        card.append(tituloCategoria, listaItens);
+                        containerMotivos.appendChild(card);
                     });
 
                 } catch (err) {
