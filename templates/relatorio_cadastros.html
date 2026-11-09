@@ -196,24 +196,32 @@
                 lupa: `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"></path></svg>`
             };
 
-            window.svgsDeSeguranca = svgsDeSeguranca;
-
-            function obterIconeSeguro(chaveSvg, urlExterna) {
-                return `<img src="${urlExterna}" class="w-6 h-6 object-contain drop-shadow-sm" alt="${chaveSvg}" onerror="this.outerHTML = window.svgsDeSeguranca['${chaveSvg}']">`;
-            }
-
             const icons = {
-                coracao: obterIconeSeguro('coracao', 'https://cdn-icons-png.flaticon.com/512/833/833472.png'),
-                gota: obterIconeSeguro('gota', 'https://cdn-icons-png.flaticon.com/512/4228/4228719.png'),
-                alerta: obterIconeSeguro('alerta', 'https://cdn-icons-png.flaticon.com/512/1076/1076337.png'),
-                gestante: obterIconeSeguro('gestante', 'https://cdn-icons-png.flaticon.com/512/2965/2965709.png'),
-                cerebro: obterIconeSeguro('cerebro', 'https://cdn-icons-png.flaticon.com/512/2806/2806652.png'),
-                cigarro: obterIconeSeguro('cigarro', 'https://cdn-icons-png.flaticon.com/512/2610/2610115.png'),
-                acessivel: obterIconeSeguro('acessivel', 'https://cdn-icons-png.flaticon.com/512/3773/3773099.png'),
-                casa: obterIconeSeguro('casa', 'https://cdn-icons-png.flaticon.com/512/619/619034.png'),
-                raio: obterIconeSeguro('raio', 'https://cdn-icons-png.flaticon.com/512/3050/3050114.png'),
-                pata: obterIconeSeguro('pata', 'https://cdn-icons-png.flaticon.com/512/2138/2138241.png'),
-                lupa: obterIconeSeguro('lupa', 'https://cdn-icons-png.flaticon.com/512/3858/3858064.png')
+                coracao: 'coracao',
+                gota: 'gota',
+                alerta: 'alerta',
+                gestante: 'gestante',
+                cerebro: 'cerebro',
+                cigarro: 'cigarro',
+                acessivel: 'acessivel',
+                casa: 'casa',
+                raio: 'raio',
+                pata: 'pata',
+                lupa: 'lupa'
+            };
+
+            const urlsIcones = {
+                coracao: 'https://cdn-icons-png.flaticon.com/512/833/833472.png',
+                gota: 'https://cdn-icons-png.flaticon.com/512/4228/4228719.png',
+                alerta: 'https://cdn-icons-png.flaticon.com/512/1076/1076337.png',
+                gestante: 'https://cdn-icons-png.flaticon.com/512/2965/2965709.png',
+                cerebro: 'https://cdn-icons-png.flaticon.com/512/2806/2806652.png',
+                cigarro: 'https://cdn-icons-png.flaticon.com/512/2610/2610115.png',
+                acessivel: 'https://cdn-icons-png.flaticon.com/512/3773/3773099.png',
+                casa: 'https://cdn-icons-png.flaticon.com/512/619/619034.png',
+                raio: 'https://cdn-icons-png.flaticon.com/512/3050/3050114.png',
+                pata: 'https://cdn-icons-png.flaticon.com/512/2138/2138241.png',
+                lupa: 'https://cdn-icons-png.flaticon.com/512/3858/3858064.png'
             };
 
             const temas = {
@@ -259,32 +267,61 @@
                 }
             };
 
-            function criarCard(label, valor, iconSvg, corKey, valTotalRef = 0, hideIfZero = false) {
-                if (hideIfZero && (valor === 0 || valor === "0" || valor === "0.0")) return "";
+            function criarIconeSeguro(chaveSvg) {
+                const imagem = document.createElement('img');
+                imagem.className = "w-6 h-6 object-contain drop-shadow-sm";
+                imagem.alt = chaveSvg;
+                imagem.src = urlsIcones[chaveSvg];
+                imagem.addEventListener('error', () => {
+                    const svg = new DOMParser().parseFromString(
+                        svgsDeSeguranca[chaveSvg],
+                        'image/svg+xml'
+                    ).documentElement;
+                    imagem.replaceWith(document.importNode(svg, true));
+                }, {
+                    once: true
+                });
+                return imagem;
+            }
 
+            function criarCard(label, valor, iconKey, corKey, valTotalRef = 0, hideIfZero = false) {
+                if (hideIfZero && (valor === 0 || valor === "0" || valor === "0.0")) return null;
                 const t = temas[corKey] || temas.blue;
-                let pctHtml = '';
+                const card = document.createElement('div');
+                card.className = `flex flex-col p-3 rounded-lg ${t.bg} border ${t.border} shadow-sm avoid-break`;
 
-                // O cálculo da percentagem relativa foi ativado para todos que enviarem valTotalRef
+                const cabecalho = document.createElement('div');
+                cabecalho.className = "flex items-center justify-between mb-2";
+                const icone = document.createElement('div');
+                icone.className = `${t.iconBg} p-1 rounded border ${t.border} ${t.iconText}`;
+                icone.appendChild(criarIconeSeguro(iconKey));
+
+                const percentual = document.createElement('span');
                 if (valTotalRef > 0) {
                     const pct = ((valor / valTotalRef) * 100).toFixed(1);
-                    pctHtml = `<span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded ${t.pctBg} ${t.pctText}">${pct}%</span>`;
+                    percentual.className = `text-[9px] font-extrabold px-1.5 py-0.5 rounded ${t.pctBg} ${t.pctText}`;
+                    percentual.textContent = `${pct}%`;
                 }
+                cabecalho.appendChild(icone);
+                if (valTotalRef > 0) cabecalho.appendChild(percentual);
 
-                return `
-                <div class="flex flex-col p-3 rounded-lg ${t.bg} border ${t.border} shadow-sm avoid-break">
-                    <div class="flex items-center justify-between mb-2">
-                        <div class="${t.iconBg} p-1 rounded border ${t.border} ${t.iconText}">
-                            ${iconSvg}
-                        </div>
-                        ${pctHtml}
-                    </div>
-                    <div>
-                        <div class="text-[9px] font-bold text-gray-600 uppercase tracking-tight leading-tight line-clamp-2 h-[26px]">${label}</div>
-                        <div class="text-2xl font-black text-gray-900 mt-1">${valor}</div>
-                    </div>
-                </div>
-            `;
+                const conteudo = document.createElement('div');
+                const rotulo = document.createElement('div');
+                rotulo.className = "text-[9px] font-bold text-gray-600 uppercase tracking-tight leading-tight line-clamp-2 h-[26px]";
+                rotulo.textContent = label;
+                const valorCard = document.createElement('div');
+                valorCard.className = "text-2xl font-black text-gray-900 mt-1";
+                valorCard.textContent = valor;
+                conteudo.append(rotulo, valorCard);
+                card.append(cabecalho, conteudo);
+                return card;
+            }
+
+            function renderizarCards(containerId, definicoes) {
+                const cards = definicoes
+                    .map(definicao => criarCard(...definicao))
+                    .filter(card => card !== null);
+                document.getElementById(containerId).replaceChildren(...cards);
             }
 
             async function carregarCadastros() {
@@ -316,40 +353,40 @@
                     document.getElementById('kpi-densidade').textContent = densidade;
 
                     // Bloco 1: Condições Crônicas (Referência = totalCad)
-                    document.getElementById('grid-cronicos').innerHTML = `
-                    ${criarCard("Hipertensão Arterial", d.cad_hipertensos, icons.coracao, "red", totalCad)}
-                    ${criarCard("Diabetes Mellitus", d.cad_diabeticos, icons.gota, "red", totalCad)}
-                    ${criarCard("Gestantes Adscritas", d.cad_gestantes, icons.gestante, "pink", totalCad)}
-                    ${criarCard("Internação (Últ. 12m)", d.cad_internacao_recente, icons.alerta, "red", totalCad)}
-                    ${criarCard("Histórico de AVC", d.cad_avc, icons.alerta, "red", totalCad, true)}
-                    ${criarCard("Histórico de Infarto", d.cad_infarto, icons.alerta, "red", totalCad, true)}
-                    ${criarCard("Doença Renal Crônica", d.cad_rins, icons.gota, "red", totalCad, true)}
-                    ${criarCard("Tb / Hanseníase", (d.cad_tuberculose + d.cad_hanseniase), icons.alerta, "red", totalCad, true)}
-                    ${criarCard("Paciente com Câncer", d.cad_cancer, icons.alerta, "red", totalCad, true)}
-                `;
+                    renderizarCards('grid-cronicos', [
+                        ["Hipertensão Arterial", d.cad_hipertensos, icons.coracao, "red", totalCad],
+                        ["Diabetes Mellitus", d.cad_diabeticos, icons.gota, "red", totalCad],
+                        ["Gestantes Adscritas", d.cad_gestantes, icons.gestante, "pink", totalCad],
+                        ["Internação (Últ. 12m)", d.cad_internacao_recente, icons.alerta, "red", totalCad],
+                        ["Histórico de AVC", d.cad_avc, icons.alerta, "red", totalCad, true],
+                        ["Histórico de Infarto", d.cad_infarto, icons.alerta, "red", totalCad, true],
+                        ["Doença Renal Crônica", d.cad_rins, icons.gota, "red", totalCad, true],
+                        ["Tb / Hanseníase", (d.cad_tuberculose + d.cad_hanseniase), icons.alerta, "red", totalCad, true],
+                        ["Paciente com Câncer", d.cad_cancer, icons.alerta, "red", totalCad, true]
+                    ]);
 
                     // Bloco 2: Vulnerabilidade (Referência = totalCad)
-                    document.getElementById('grid-vulnerabilidades').innerHTML = `
-                    ${criarCard("Saúde Mental (Geral)", d.cad_tratamento_psiquiatrico, icons.cerebro, "orange", totalCad)}
-                    ${criarCard("Total com Deficiência", d.cad_deficiencia_total, icons.acessivel, "orange", totalCad)}
-                    ${criarCard("Espectro Autista (TEA)", d.cad_tea_autismo, icons.cerebro, "orange", totalCad, true)}
-                    ${criarCard("Tabagismo Ativo", d.cad_fumantes, icons.cigarro, "orange", totalCad)}
-                    ${criarCard("Consumo de Álcool", d.cad_alcool, icons.alerta, "orange", totalCad)}
-                    ${criarCard("Paciente Acamado", d.cad_acamados, icons.casa, "orange", totalCad, true)}
-                    ${criarCard("Paciente Domiciliado", d.cad_domiciliados, icons.casa, "orange", totalCad, true)}
-                    ${criarCard("Sem Documento (CPF)", d.cad_sem_cpf, icons.lupa, "orange", totalCad, true)}
-                `;
+                    renderizarCards('grid-vulnerabilidades', [
+                        ["Saúde Mental (Geral)", d.cad_tratamento_psiquiatrico, icons.cerebro, "orange", totalCad],
+                        ["Total com Deficiência", d.cad_deficiencia_total, icons.acessivel, "orange", totalCad],
+                        ["Espectro Autista (TEA)", d.cad_tea_autismo, icons.cerebro, "orange", totalCad, true],
+                        ["Tabagismo Ativo", d.cad_fumantes, icons.cigarro, "orange", totalCad],
+                        ["Consumo de Álcool", d.cad_alcool, icons.alerta, "orange", totalCad],
+                        ["Paciente Acamado", d.cad_acamados, icons.casa, "orange", totalCad, true],
+                        ["Paciente Domiciliado", d.cad_domiciliados, icons.casa, "orange", totalCad, true],
+                        ["Sem Documento (CPF)", d.cad_sem_cpf, icons.lupa, "orange", totalCad, true]
+                    ]);
 
                     // Bloco 3: Habitação (Referência = totalDom)
-                    document.getElementById('grid-domiciliar').innerHTML = `
-                    ${criarCard("Energia Elétrica", d.com_energia_eletrica, icons.raio, "blue", totalDom)}
-                    ${criarCard("Cômodos / Domicílio", d.media_comodos, icons.casa, "blue")}
-                    ${criarCard("Famílias c/ Animais", d.domicilios_com_animais, icons.pata, "teal", totalDom)}
-                    ${criarCard("Presença de Cães", d.com_cachorro, icons.pata, "teal", totalDom, true)}
-                    ${criarCard("Presença de Gatos", d.com_gato, icons.pata, "teal", totalDom, true)}
-                    ${criarCard("Criação de Aves", d.com_galinha, icons.pata, "teal", totalDom, true)}
-                    ${criarCard("Possui Plano Privado", d.cad_plano_saude, icons.casa, "blue", totalDom)}
-                `;
+                    renderizarCards('grid-domiciliar', [
+                        ["Energia Elétrica", d.com_energia_eletrica, icons.raio, "blue", totalDom],
+                        ["Cômodos / Domicílio", d.media_comodos, icons.casa, "blue"],
+                        ["Famílias c/ Animais", d.domicilios_com_animais, icons.pata, "teal", totalDom],
+                        ["Presença de Cães", d.com_cachorro, icons.pata, "teal", totalDom, true],
+                        ["Presença de Gatos", d.com_gato, icons.pata, "teal", totalDom, true],
+                        ["Criação de Aves", d.com_galinha, icons.pata, "teal", totalDom, true],
+                        ["Possui Plano Privado", d.cad_plano_saude, icons.casa, "blue", totalDom]
+                    ]);
 
                 } catch (err) {
                     console.error(err);
